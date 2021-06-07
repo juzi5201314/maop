@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "cli",
+    "config",
+    "core",
+    "logger",
+    "template",
+    "utils",
+    "proc_macro"
+]

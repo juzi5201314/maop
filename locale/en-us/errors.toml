@@ -1,0 +1,11 @@
+[config]
+parsing_failed = "Configuration file parsing failed!"
+init_failed = "Failed to initialize configuration file"
+
+[io]
+read_dir_error = "An error occurred while reading the directory!"
+
+[logger]
+nonexistent_level = "Non-existent log level!"
+send_failure = "Failed to send log!"
+processor_error = "An error occurred in a log processor: "

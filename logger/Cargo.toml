@@ -1,0 +1,23 @@
+[package]
+name = "logger"
+version = "0.1.0"
+authors = ["soeur <juzi201314@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+proc_macro = { path = "../proc_macro" }
+utils = { path = "../utils" }
+
+tokio = { version = "1.6", features = ["full"] }
+once_cell = "1.7.2"
+arc-swap = "1.3.0"
+anyhow = "1.0.40"
+async-trait = "0.1"
+futures = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+fast-async-mutex = "0.6"
+flume = "0.10"
+colored = "2"
