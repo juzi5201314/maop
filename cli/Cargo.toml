@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 core = { path = "../core" }
 
-tokio = { version = "1.6", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
