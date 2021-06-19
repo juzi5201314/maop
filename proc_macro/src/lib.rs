@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 
 #[proc_macro]
 pub fn stringify_lower_case(input: TokenStream) -> TokenStream {

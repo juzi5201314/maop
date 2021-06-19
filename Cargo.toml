@@ -7,5 +7,14 @@ members = [
     "template",
     "utils",
     "proc_macro",
-    "states"
+    "states",
+    "database",
+    "http",
+    "data_structure",
+    "settings"
 ]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"

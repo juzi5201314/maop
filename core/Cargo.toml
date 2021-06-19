@@ -7,3 +7,35 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+config = { path = "../config" }
+logger = { path = "../logger" }
+states = { path = "../states" }
+http = { path = "../http" }
+database = { path = "../database" }
+
+once_cell = "1.7"
+anyhow = "1.0"
+tokio = { version = "1.6", features = ["full"] }
+
+snmalloc-rs = { version = "0.2", optional = true, features = ["usecxx20"] }
+mimalloc = { version = "0.1", optional = true, default-features = false }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+# see https://github.com/gnzlbg/jemallocator#platform-support
+jemallocator = { version = "0.3", optional = true }
+
+[features]
+default = []
+
+use_jemalloc = ["jemallocator"]
+use_snmalloc = ["snmalloc-rs"]
+use_mimalloc = ["mimalloc"]
+
+snmalloc_native_cpu = ["use_snmalloc", "snmalloc-rs/native-cpu"]
+snmalloc_build_cc = ["use_snmalloc", "snmalloc-rs/build_cc"]
+snmalloc_qemu = ["use_snmalloc", "snmalloc-rs/qemu"]
+snmalloc_local_dynamic_tls = ["use_snmalloc", "snmalloc-rs/local_dynamic_tls"]
+snmalloc_win8compat = ["use_snmalloc", "snmalloc-rs/win8compat"]
+
+mimalloc_local_dynamic_tls = ["use_mimalloc", "mimalloc/local_dynamic_tls"]
+mimalloc_secure = ["use_mimalloc", "mimalloc/secure"]

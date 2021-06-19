@@ -31,13 +31,14 @@ _mod_and_pub!(
 #[inline]
 pub fn format(record: Arc<Record>) -> String {
     format!(
-        "{time} [{lvl}] {debug}{content}\n",
+        "{time} [{lvl}] [{crate_name}] {debug}{content}\n",
         time = record
             .time
             .to_rfc3339_opts(SecondsFormat::Secs, true)
             .black()
             .on_bright_white(),
         lvl = level_color(record.level),
+        crate_name = record.crate_name.bright_cyan(),
         debug = if record.level == Level::Debug {
             format!(
                 "{}::{}:{} ",

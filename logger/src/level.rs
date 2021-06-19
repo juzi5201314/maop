@@ -1,48 +1,13 @@
-use proc_macro::{stringify_lower_case, stringify_upper_case};
 use serde::{Deserialize, Serialize, Serializer};
 use std::cmp;
 use std::fmt::{Display, Formatter};
 
-macro_rules! _strum {
-    ($($member:ident),*) => {
-        impl Level {
-            pub fn to_str(self) -> &'static str {
-                match self {
-                    $(
-                        Self::$member => stringify!($member),
-                    )*
-                }
-            }
-
-            pub fn to_uppercase_str(self) -> &'static str {
-                match self {
-                    $(
-                        Self::$member => stringify_upper_case!($member),
-                    )*
-                }
-            }
-
-            pub fn to_lowercase_str(self) -> &'static str {
-                match self {
-                    $(
-                        Self::$member => stringify_lower_case!($member),
-                    )*
-                }
-            }
-        }
-
-        impl From<String> for Level {
-            fn from(s: String) -> Self {
-                match s.as_ref() {
-                    $(
-                        stringify_lower_case!($member) => Self::$member,
-                    )*
-                    _ => panic!("{}: {}", utils::i18n!("errors.logger.nonexistent_level"), &s)
-                }
-            }
-        }
-    };
-}
+utils::strum!(Level, {
+    Debug,
+    Info,
+    Warning,
+    Error
+});
 
 #[derive(Debug, Copy, Clone, Eq, Deserialize)]
 pub enum Level {
@@ -50,6 +15,18 @@ pub enum Level {
     Info,
     Warning,
     Error,
+}
+
+impl From<log::Level> for Level {
+    fn from(lvl: log::Level) -> Self {
+        match lvl {
+            log::Level::Error => Level::Error,
+            log::Level::Warn => Level::Warning,
+            log::Level::Debug => Level::Debug,
+            log::Level::Info => Level::Info,
+            log::Level::Trace => Level::Debug
+        }
+    }
 }
 
 impl Serialize for Level {
@@ -109,11 +86,4 @@ impl Ord for Level {
     fn cmp(&self, other: &Level) -> cmp::Ordering {
         (*self as usize).cmp(&(*other as usize))
     }
-}
-
-_strum! {
-        Debug,
-        Info,
-        Warning,
-        Error
 }

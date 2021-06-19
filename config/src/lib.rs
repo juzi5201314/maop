@@ -1,5 +1,5 @@
 use std::fs::read_dir;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Duration;
@@ -7,23 +7,17 @@ use std::time::Duration;
 use arc_swap::ArcSwap;
 use notify::{RecursiveMode, Watcher};
 use once_cell::sync::Lazy;
-use serde::Deserialize;
-use tokio::task::JoinHandle;
 
+pub use models::*;
 use utils::*;
+use anyhow::Context;
 
-static CONFIG: Lazy<Config> = Lazy::new(|| {
-    #[allow(clippy::expect_fun_call)]
-    Config::new().expect(&i18n!("errors.config.init_failed"))
-});
+mod models;
 
-pub fn get_config() -> Arc<MaopConfig> {
-    Arc::clone(&CONFIG.main.load())
-}
-
+#[macro_export]
 macro_rules! gen_config {
     ($name:ident, { $($(#[$attr:meta])* $field:ident: $r#type:ty),* }) => {
-        #[derive(Debug, Deserialize, Clone)]
+        #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
         pub struct $name {
             $($(#[$attr])* $field: $r#type),*
         }
@@ -34,13 +28,36 @@ macro_rules! gen_config {
         }
     };
 }
-gen_config!(RocketConfig, { port: u16 });
-gen_config!(MaopConfig, { rocket: RocketConfig });
+
+pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    let path = std::env::var("DATA_PATH").unwrap_or_else(|_| String::from("data"));
+    let path = Path::new(&path);
+    if !path.exists() || !path.is_dir() {
+        std::fs::create_dir_all(&path).with_context(|| i18n!("errors.io.create_dir_error")).unwrap();
+    }
+    path.to_path_buf()
+});
+
+pub static CONFIG: Lazy<Config> = Lazy::new(|| {
+    #[allow(clippy::expect_fun_call)]
+    Config::new().expect(&i18n!("errors.config.init_failed"))
+});
+
+pub fn get_config() -> Arc<MaopConfig> {
+    Arc::clone(&CONFIG.main).load_full()
+}
+
+#[test]
+fn config_test() {
+    let coo = Config::new().unwrap();
+    let b = coo.main.clone().load();
+    let a = b.rocket();
+    dbg!(a);
+}
+
 pub struct Config {
-    inner: config_rs::Config,
-    main: ArcSwap<MaopConfig>,
-    #[allow(dead_code)]
-    watch_handle: JoinHandle<()>,
+    pub inner: config_rs::Config,
+    pub main: Arc<ArcSwap<MaopConfig>>,
 }
 
 impl Config {
@@ -49,9 +66,17 @@ impl Config {
         let config_files: Vec<String> =
             Config::find_config_files(".", "maop")?;
         let mut c = config_rs::Config::new();
+        c.merge(
+            config_rs::File::from_str(
+                include_str!("default.toml"),
+                config_rs::FileFormat::Toml,
+            )
+            .required(false),
+        )?;
 
         dotenv::dotenv().ok();
-        c.merge(config_rs::Environment::with_prefix("MAOP"))?;
+        c.merge(config_rs::Environment::with_prefix("MAOP").separator("_"))?;
+
         config_files.iter().try_for_each(|file_name| {
             c.merge(
                 config_rs::File::with_name(file_name).required(false),
@@ -59,7 +84,7 @@ impl Config {
             .erase()
         })?;
 
-        let watch_handle = Config::start_watch(&config_files)?;
+        Config::start_watch(&config_files)?;
 
         let maop_config: MaopConfig =
             c.clone().try_into().map_err(|err| {
@@ -69,10 +94,8 @@ impl Config {
                     err
                 )
             })?;
-
         Ok(Config {
-            main: ArcSwap::from_pointee(maop_config),
-            watch_handle,
+            main: Arc::new(ArcSwap::from_pointee(maop_config)),
             inner: c,
         })
     }
@@ -85,16 +108,14 @@ impl Config {
         Ok(())
     }
 
-    fn start_watch(
-        watch_files: &[String],
-    ) -> anyhow::Result<JoinHandle<()>> {
+    fn start_watch(watch_files: &[String]) -> anyhow::Result<()> {
         let (tx, rx) = channel();
         let mut watcher =
             notify::watcher(tx, Duration::from_secs(2))?;
         watch_files.iter().try_for_each(|watch_file| {
             watcher.watch(watch_file, RecursiveMode::NonRecursive)
         })?;
-        Ok(tokio::task::spawn_blocking(move || {
+        std::thread::spawn(move || {
             // 即使不用,也要把watcher move到task里
             // 否则watcher会在函数结束后drop,导致无法继续watch文件
             let _ = watcher;
@@ -112,7 +133,8 @@ impl Config {
                     }
                 }
             }
-        }))
+        });
+        Ok(())
     }
 
     /// 在path找到全部config文件

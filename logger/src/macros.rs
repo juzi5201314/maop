@@ -1,3 +1,5 @@
+pub use crate___name::crate_name;
+
 #[macro_export]
 macro_rules! _log {
     ($lvl:expr, $arg:expr) => {
@@ -5,7 +7,13 @@ macro_rules! _log {
     };
 
     ($lvl:expr, $($arg:tt)+) => {
-        $crate::_log($lvl, format!($($arg)+), module_path!(), ::std::borrow::Cow::Borrowed(file!()), line!());
+        $crate::_log($lvl,
+            format!($($arg)+),
+            module_path!(),
+            ::std::borrow::Cow::Borrowed(file!()),
+            line!(),
+            $crate::crate_name!()
+        );
     };
 }
 
