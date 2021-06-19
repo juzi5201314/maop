@@ -15,6 +15,30 @@ impl Response<'_, '_> {
         Default::default()
     }
 
+    /// utf-8 string
+    pub fn text<S>(mut self, text: S) -> Self where S: AsRef<str> {
+        self.body(text.as_ref().as_bytes().to_owned())
+    }
+
+    pub fn bincode<T>(mut self, data: &T) -> anyhow::Result<Self> where T: Serialize {
+        bincode::serialize_into(&mut self.body, data)?;
+        Ok(self)
+    }
+
+    pub fn urlencoded<T>(mut self, data: &T) -> anyhow::Result<Self> where T: Serialize {
+        Ok(self.text(serde_urlencoded::to_string(data)?))
+    }
+
+    pub fn xml<T>(mut self, data: &T) -> anyhow::Result<Self> where T: Serialize {
+        quick_xml::se::to_writer(&mut self.body, data)?;
+        Ok(self)
+    }
+
+    pub fn msgpack<T>(mut self, data: &T) -> anyhow::Result<Self> where T: Serialize {
+        rmp_serde::encode::write(&mut self.body, data)?;
+        Ok(self)
+    }
+
     pub fn json<T>(mut self, data: &T) -> anyhow::Result<Self> where T: Serialize {
         serde_json::to_writer(&mut self.body, data)?;
         Ok(self)

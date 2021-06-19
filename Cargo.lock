@@ -549,6 +549,7 @@ dependencies = [
  "config 0.1.0",
  "database",
  "serde 1.0.126",
+ "settings",
  "sled",
  "utils",
 ]
@@ -1494,6 +1495,7 @@ dependencies = [
  "once_cell",
  "proc_macro",
  "serde 1.0.126",
+ "states",
  "tokio",
  "utils",
 ]
@@ -2482,7 +2484,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "config 0.1.0",
- "data_structure",
  "once_cell",
  "sled",
  "utils",
@@ -3236,10 +3237,13 @@ checksum = "7cf7d77f457ef8dfa11e4cd5933c5ddb5dc52a94664071951219a97710f0a32b"
 name = "utils"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "bincode",
  "byte-unit",
  "chrono",
  "serde 1.0.126",
  "simple-i18n",
+ "sled",
 ]
 
 [[package]]

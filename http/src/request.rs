@@ -11,15 +11,15 @@ use rocket::request::{FromRequest, Outcome};
 use rocket::{Orbit, Request as RRequest, Rocket, Route};
 
 pub struct Request<'a> {
-    method: Method,
-    uri: &'a Origin<'a>,
-    headers: &'a HeaderMap<'a>,
-    remote: Option<SocketAddr>,
-    rocket: &'a Rocket<Orbit>,
-    route: Option<&'a Route>,
-    cookies: &'a CookieJar<'a>,
-    accept: Option<&'a Accept>,
-    content_type: Option<&'a ContentType>,
+    pub method: Method,
+    pub uri: &'a Origin<'a>,
+    pub headers: &'a HeaderMap<'a>,
+    pub remote: Option<SocketAddr>,
+    pub rocket: &'a Rocket<Orbit>,
+    pub route: Option<&'a Route>,
+    pub cookies: &'a CookieJar<'a>,
+    pub accept: Option<&'a Accept>,
+    pub content_type: Option<&'a ContentType>,
 }
 
 #[rocket::async_trait]

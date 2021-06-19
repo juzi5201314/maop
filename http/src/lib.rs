@@ -74,6 +74,7 @@ pub async fn run_http_server(
     rocket::Rocket::build()
         .manage(db)
         .mount("/", routes::index::routes())
+        .mount("/api", routes::index::routes())
         .mount("/admin", routes::admin::routes())
         .configure(rocket_config)
         .ignite()

@@ -10,6 +10,7 @@ edition = "2018"
 utils = { path = "../utils" }
 database = { path = "../database" }
 config = { path = "../config" }
+settings = { path = "../settings" }
 
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }

@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 config = { path = "../config" }
 utils = { path = "../utils" }
-data_structure = { path = "../data_structure" }
 
 anyhow = "1.0"
 sled = { version = "0.34.6", features = ["compression"] }

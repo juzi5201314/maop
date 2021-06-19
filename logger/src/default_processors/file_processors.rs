@@ -1,5 +1,5 @@
 use std::fs::create_dir_all;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -36,6 +36,12 @@ impl FileProcessors {
             .await
     }
 
+    async fn open_file_and_repeat_processing(&mut self, record: Arc<Record>) -> anyhow::Result<()> {
+        self.file = Some(Self::open_file().await?);
+        self.process(record).await?;
+        Ok(())
+    }
+
     fn file_name() -> String {
         format!("{}.log", chrono::Local::today().format("%Y-%m-%d"))
     }
@@ -62,8 +68,7 @@ impl Processor for FileProcessors {
             .await?;
             //file.sync_data().await?;
         } else {
-            self.file = Some(Self::open_file().await?);
-            self.process(record).await?;
+            self.open_file_and_repeat_processing(record).await?;
         }
 
         Ok(())

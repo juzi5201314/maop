@@ -3,7 +3,7 @@ use std::ops::Deref;
 use anyhow::Context;
 use once_cell::sync::Lazy;
 
-use data_structure::{De, DeFromIVec, Se};
+use utils::ser_de::{De, DeFromIVec, Se};
 use utils::Consume;
 
 static SLED: Lazy<sled::Db> = Lazy::new(|| {
@@ -42,23 +42,42 @@ where
 pub fn get_default<'a, D, S>(
     key: S,
     default: D,
-) -> anyhow::Result<Option<D>>
+) -> anyhow::Result<D>
 where
     S: AsRef<[u8]>,
     D: Se + De<'a>,
 {
     match get(&key)? {
-        Some(v) => Ok(Some(v)),
+        Some(v) => Ok(v),
         None => {
             set(key, &default)?;
-            Ok(Some(default))
+            Ok(default)
+        }
+    }
+}
+
+pub fn get_else_default<'a, D, S, F>(
+    key: S,
+    default: F,
+) -> anyhow::Result<D>
+    where
+        S: AsRef<[u8]>,
+        D: Se + De<'a>,
+        F: FnOnce() -> D,
+{
+    match get(&key)? {
+        Some(v) => Ok(v),
+        None => {
+            let default = default();
+            set(key, &default)?;
+            Ok(default)
         }
     }
 }
 
 pub fn set<S, T>(
     key: S,
-    val: T,
+    val: &T,
 ) -> anyhow::Result<Option<impl DeFromIVec>>
 where
     S: AsRef<[u8]>,
@@ -66,6 +85,22 @@ where
 {
     utils::defer!(|| SLED.flush().consume());
     Ok(SLED.insert(key.as_ref(), val.ser()?)?.map(|v| v))
+}
+
+macro_rules! gen_func {
+    ($(($name:ident, $default:expr, $typ:ty))*) => {
+        $(
+            pub fn $name() -> anyhow::Result<$typ> {
+                $crate::get_else_default::<$typ, _, _>(stringify!($name), || <$typ>::from($default))
+            }
+        )*
+    };
+}
+
+gen_func! {
+    (website_name, "Maop default", String)
+    (website_author_name, "GG Cat", String)
+
 }
 
 #[test]

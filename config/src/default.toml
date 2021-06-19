@@ -9,7 +9,7 @@ uri = "sqlite:data/default.db"
 warn_time = "1s"
 
 [settings]
-sled_cache_capacity = "4kb"
+sled_cache_capacity = "10kb"
 sled_use_compression = true
 sled_compression_factor = 5
 # sled automatic flush interval. Under normal circumstances, there is no need to specify, settings will be flushed every time they are changed
@@ -28,6 +28,14 @@ addr = "0.0.0.0"
 # [rocket.limits]
 # "pet/dog/bingo" = "10kb"
 # json = "10mb"
+
+[log]
+# Every time it is output to stdout, it will be flushed.
+# Turning on this option can prevent the log messages of the console from being confused
+# (that is, multiple messages are written to stdout at the same time).
+# But in the case of too many log messages, it will seriously slow down the log processing speed.
+flush_stdout_every_time = true
+full_module_path = false
 
 [log.filter]
 # rocket = "warning"

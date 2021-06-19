@@ -25,21 +25,28 @@ _mod_and_pub!(
     stdout_processors,
     StdoutProcessors,
     file_processors,
-    FileProcessors
+    FileProcessors,
+    recorder_processors,
+    RecorderProcessors
 );
 
 #[inline]
 pub fn format(record: Arc<Record>) -> String {
     format!(
-        "{time} [{lvl}] [{crate_name}] {debug}{content}\n",
+        "{time} [{lvl}] [{module_path}] {content}\n",
         time = record
             .time
             .to_rfc3339_opts(SecondsFormat::Secs, true)
             .black()
             .on_bright_white(),
         lvl = level_color(record.level),
-        crate_name = record.crate_name.bright_cyan(),
-        debug = if record.level == Level::Debug {
+        //crate_name = record.crate_name.bright_cyan(),
+        module_path = if *config::get_config().as_ref().log().full_module_path() {
+            record.module_path
+        } else {
+            record.crate_name
+        }.purple(),
+        /*debug = if record.level == Level::Debug {
             format!(
                 "{}::{}:{} ",
                 record.module_path, record.file, record.line
@@ -47,7 +54,7 @@ pub fn format(record: Arc<Record>) -> String {
             .purple()
         } else {
             ColoredString::default()
-        },
+        },*/
         content = record.content,
     )
 }

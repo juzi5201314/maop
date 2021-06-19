@@ -5,13 +5,14 @@ use once_cell::sync::Lazy;
 
 use atomic::Atomic;
 
-static STATES: Lazy<States> = Lazy::new(States::new);
+pub static STATES: Lazy<States> = Lazy::new(States::new);
 
 pub const ORDER: Ordering = Ordering::SeqCst;
 
 #[derive(Default)]
 pub struct States {
-    log_count: Atomic<u64>,
+    pub log_count: Atomic<u64>,
+    pub log_size: Atomic<u64>,
 }
 
 impl States {

@@ -22,4 +22,4 @@ time_unit_format = "The format of the time unit is: `12s`"
 byte_unit_format = "The format of the byte unit is: `10kb`"
 
 [http]
-unsupported_mime_type = "Unsupported MIME type"
+unsupported_resp_type = "Unsupported type"
