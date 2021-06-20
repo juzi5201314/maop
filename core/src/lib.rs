@@ -1,3 +1,5 @@
+#[cfg(feature = "prof")]
+mod prof;
 
 use once_cell::sync::Lazy;
 
@@ -12,6 +14,11 @@ use std::sync::Arc;
 ))]
 compile_error!(
     "Only one memory allocator can be used at the same time!"
+);
+
+#[cfg(all(target_env = "msvc", feature = "use_jemalloc"))]
+compile_error!(
+    "jemalloc does not support msvc targets. Please refer to https://github.com/gnzlbg/jemallocator#platform-support for available platforms."
 );
 
 #[cfg(all(not(target_env = "msvc"), feature = "use_jemalloc"))]
@@ -31,9 +38,15 @@ pub async fn init() {
 }
 
 pub async fn run() -> anyhow::Result<()> {
+    #[cfg(feature = "prof")]
+    let guard = prof::start();
+
     logger::init();
     let db = Arc::new(Database::new().await?);
 
     http::run_http_server(Arc::clone(&db)).await?;
+
+    #[cfg(feature = "prof")]
+    prof::report(&guard);
     Ok(())
 }
