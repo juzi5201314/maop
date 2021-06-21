@@ -1,3 +1,5 @@
+#![feature(decl_macro)]
+
 use std::net::ToSocketAddrs;
 use std::ops::Deref;
 use std::sync::Arc;

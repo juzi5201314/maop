@@ -9,28 +9,17 @@ use data_structure::website::WebsiteInfo;
 use data_structure::wraps::Posts;
 use database::Database;
 
-use crate::api_format::{format_api, RespType};
+use crate::api_format::check_api;
 use crate::request::Request;
 use crate::response::Response;
 
-#[get("/?<resp_type>")]
-pub async fn index<'a>(
-    resp_type: Option<RespType<'a>>,
-    route: &'a Route,
-    data: IndexData,
-) -> crate::Result<'a> {
-    let base = route.uri.base();
-    match base {
-        "/api" => index_api(resp_type, data).await,
-        _ => Ok(Response::new().text("hello world")),
-    }
-}
-
-pub async fn index_api(
-    resp_type: Option<RespType<'_>>,
+#[get("/")]
+pub async fn index(
+    req: Request<'_>,
     data: IndexData,
 ) -> crate::Result<'_> {
-    format_api(resp_type, &data)
+    check_api!(req, &data);
+    Ok(Response::new().text("hello world"))
 }
 
 #[derive(serde::Serialize)]
