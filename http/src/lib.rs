@@ -15,10 +15,39 @@ use crate::routes::index;
 mod api_format;
 mod request;
 mod response;
-mod routes;
 mod result;
+mod routes;
+mod session;
 
 use result::Result;
+
+#[macro_export]
+macro_rules! try_outcome {
+    ($result:expr) => {
+        match $result {
+            Ok(o) => rocket::request::Outcome::Success(o),
+            Err(e) => rocket::request::Outcome::Failure((
+                rocket::http::Status::InternalServerError,
+                crate::result::Error::from(e.to_string()),
+            )),
+        }
+    };
+
+    ($outcome:expr, $msg:expr) => {
+        match $outcome {
+            rocket::request::Outcome::Success(s) => s,
+            rocket::request::Outcome::Forward(f) => {
+                return rocket::request::Outcome::Forward(f)
+            }
+            rocket::request::Outcome::Failure(_) => {
+                return rocket::request::Outcome::Failure((
+                    rocket::http::Status::InternalServerError,
+                    crate::result::Error::from($msg),
+                ))
+            }
+        }
+    };
+}
 
 pub async fn run_http_server(
     db: Arc<Database>,

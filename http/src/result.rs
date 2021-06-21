@@ -3,6 +3,7 @@ use rocket::response::Responder;
 
 use crate::response::Response;
 
+#[derive(Debug)]
 pub struct Error(anyhow::Error);
 
 impl From<anyhow::Error> for Error {
@@ -10,6 +11,19 @@ impl From<anyhow::Error> for Error {
         Error(e)
     }
 }
+
+impl From<&'static str> for Error {
+    fn from(s: &'static str) -> Self {
+        Error(anyhow::Error::msg(s))
+    }
+}
+
+impl From<String> for Error {
+    fn from(s: String) -> Self {
+        Error(anyhow::Error::msg(s))
+    }
+}
+
 impl<'r, 'o: 'r> Responder<'r, 'o> for Error {
     fn respond_to(
         self,
