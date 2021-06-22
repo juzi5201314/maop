@@ -105,7 +105,12 @@ pub async fn run_http_server(
     rocket::Rocket::build()
         .manage(db)
         .mount("/", routes::index::routes())
-        .mount("/api", routes::index::routes())
+        .mount("/api", {
+            let mut res = Vec::with_capacity(10);
+            res.extend(routes::index::routes().into());
+            res.extend(routes::admin::routes().into());
+            res
+        })
         .mount("/admin", routes::admin::routes())
         .configure(rocket_config)
         .ignite()
