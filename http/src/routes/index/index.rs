@@ -9,17 +9,26 @@ use data_structure::website::WebsiteInfo;
 use data_structure::wraps::Posts;
 use database::Database;
 
-use crate::api_format::check_api;
+use crate::api_format::{check_api, Api, RespType};
 use crate::request::Request;
 use crate::response::Response;
 
-#[get("/")]
+#[get("/", rank = 10)]
 pub async fn index_page(
     req: Request<'_>,
     data: IndexPageData,
 ) -> crate::Result<'_> {
-    check_api!(req, &data);
     Ok(Response::new().text("hello world"))
+}
+
+#[get("/")]
+pub async fn index_api<'a>(
+    _api: Api,
+    resp_t: RespType<'_>,
+    data: IndexPageData,
+) -> crate::Result<'a> {
+    Ok(Response::new()
+        .format(&data, resp_t)?)
 }
 
 #[derive(serde::Serialize)]

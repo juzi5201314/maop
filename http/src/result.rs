@@ -12,6 +12,12 @@ impl From<anyhow::Error> for Error {
     }
 }
 
+impl From<Error> for anyhow::Error {
+    fn from(e: Error) -> Self {
+        e.0
+    }
+}
+
 impl From<&'static str> for Error {
     fn from(s: &'static str) -> Self {
         Error(anyhow::Error::msg(s))

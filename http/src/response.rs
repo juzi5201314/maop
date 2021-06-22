@@ -3,6 +3,7 @@ use rocket::response::Responder;
 use rocket::Request;
 use std::borrow::Cow;
 use serde::Serialize;
+use crate::api_format::{format_api, RespType};
 
 utils::builder!(Response<'a, 'b>, {
     status: Status,
@@ -18,6 +19,10 @@ impl Response<'_, '_> {
     /// utf-8 string
     pub fn text<S>(mut self, text: S) -> Self where S: AsRef<str> {
         self.body(text.as_ref().as_bytes().to_owned())
+    }
+
+    pub fn format<T>(mut self, data: &T, resp_type: RespType<'_>) -> anyhow::Result<Self> where T: Serialize {
+        Ok(self.body(format_api(resp_type, data)?.body))
     }
 
     pub fn bincode<T>(mut self, data: &T) -> anyhow::Result<Self> where T: Serialize {

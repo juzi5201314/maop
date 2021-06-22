@@ -11,3 +11,4 @@ pub fn routes() -> impl Into<Vec<Route>>  {
         login::login
     ]
 }
+
