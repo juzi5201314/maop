@@ -121,6 +121,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e906254e445520903e7fc9da4f709886c84ae4bc4ddaf0e093188d66df4dc820"
 
 [[package]]
+name = "argon2"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d60f5f3113c903294dc81dd8cf0012963ed4dda8bc931c864e12e175356ff98b"
+dependencies = [
+ "blake2",
+ "password-hash",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,6 +240,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "base64ct"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0d27fb6b6f1e43147af148af49d49329413ba781aa0d5e10979831c210173b5"
+
+[[package]]
 name = "binascii"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -260,6 +276,17 @@ dependencies = [
  "radium",
  "tap",
  "wyz",
+]
+
+[[package]]
+name = "blake2"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10a5720225ef5daecf08657f23791354e1685a8c91a4c60c7f3d3b2892f978f4"
+dependencies = [
+ "crypto-mac 0.8.0",
+ "digest 0.9.0",
+ "opaque-debug 0.3.0",
 ]
 
 [[package]]
@@ -581,6 +608,16 @@ checksum = "d82cfc11ce7f2c3faef78d8a684447b40d503d9681acebed6cb728d45940c4db"
 dependencies = [
  "cfg-if 1.0.0",
  "lazy_static",
+]
+
+[[package]]
+name = "crypto-mac"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b584a330336237c1eecd3e94266efb216c56ed91225d634cb2991c5f3fd1aeab"
+dependencies = [
+ "generic-array 0.14.4",
+ "subtle",
 ]
 
 [[package]]
@@ -1185,7 +1222,7 @@ version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1441c6b1e930e2817404b5046f1f989899143a12bf92de603b69f4e0aee1e15"
 dependencies = [
- "crypto-mac",
+ "crypto-mac 0.10.0",
  "digest 0.9.0",
 ]
 
@@ -1194,12 +1231,16 @@ name = "http"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argon2",
  "bincode",
  "config 0.1.0",
  "cookie",
  "data_structure",
  "database",
+ "logger",
+ "passwords",
  "quick-xml 0.22.0",
+ "rand_core",
  "rmp-serde",
  "rocket",
  "serde 1.0.126",
@@ -1957,6 +1998,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "password-hash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1a5d4e9c205d2c1ae73b84aab6240e98218c0e72e63b50422cfb2d1ca952282"
+dependencies = [
+ "base64ct",
+ "rand_core",
+ "subtle",
+]
+
+[[package]]
+name = "passwords"
+version = "3.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03258d8822ae1e392ba9385d4f66c1eed50129fd679c13faa2ce6f62bae5b511"
+dependencies = [
+ "random-pick",
+]
+
+[[package]]
 name = "pear"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2242,6 +2303,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "random-number"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b6c791ad2f753537ebdc0300173be0fc4821eaa628feb2c404f8acaba612d57"
+dependencies = [
+ "proc-macro-hack",
+ "rand",
+ "random-number-macro-impl",
+]
+
+[[package]]
+name = "random-number-macro-impl"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc6653af545be5b0b1a2b4c19ef0f0cb288b2e5c024016a8eb0fe2efa8d9f8de"
+dependencies = [
+ "proc-macro-hack",
+ "quote 1.0.9",
+ "syn 1.0.73",
+]
+
+[[package]]
+name = "random-pick"
+version = "1.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "420e471026e6ab33d59869853453cdbfacee6bd941710ed3bd6007a9c67e4efa"
+dependencies = [
+ "random-number",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2409,6 +2501,7 @@ dependencies = [
  "rocket_codegen",
  "rocket_http",
  "serde 1.0.126",
+ "serde_json",
  "state",
  "tempfile",
  "time 0.2.27",

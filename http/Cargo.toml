@@ -11,6 +11,7 @@ database = { path = "../database" }
 utils = { path = "../utils" }
 data_structure = { path = "../data_structure" }
 config = { path = "../config" }
+logger = { path = "../logger" }
 
 tokio = { version = "1", features = ["full"] }
 anyhow = "1.0"
@@ -21,8 +22,11 @@ rmp-serde = "0.15"
 quick-xml = { version = "0.22", features = ["serialize"] }
 serde_urlencoded = "0.7"
 cookie = "0.15.0"
+argon2 = "0.2"
+rand_core = "0.6"
+passwords = "3.1.7"
 
 [dependencies.rocket]
 git = "https://github.com/SergioBenitez/Rocket"
 rev = "abf996b026b601abb193d2f2081887b1de5e6ced"
-features = ["secrets"]
+features = ["secrets", "json"]

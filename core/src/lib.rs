@@ -44,6 +44,7 @@ pub async fn run() -> anyhow::Result<()> {
     logger::init();
     let db = Arc::new(Database::new().await?);
 
+    http::generate_password_if_no_exists()?;
     http::run_http_server(Arc::clone(&db)).await?;
 
     #[cfg(feature = "prof")]

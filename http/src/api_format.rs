@@ -54,10 +54,9 @@ impl<'a> FromRequest<'a> for Api {
         request: &'a rocket::Request<'_>,
     ) -> Outcome<Self, Self::Error> {
         dbg!(request.route());
-        match request
-            .route()
-            .and_then(|route| (route.uri.base() == "/api").then(|| ()))
-        {
+        match request.route().and_then(|route| {
+            (route.uri.base() == "/api").then(|| ())
+        }) {
             Some(()) => Outcome::Success(Api),
             None => Outcome::Forward(()),
         }

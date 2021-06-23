@@ -11,7 +11,9 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 
 use database::Database;
+use result::Result;
 
+pub use crate::routes::admin::login::generate_password_if_no_exists;
 use crate::routes::index;
 
 mod api_format;
@@ -20,8 +22,6 @@ mod response;
 mod result;
 mod routes;
 mod session;
-
-use result::Result;
 
 #[macro_export]
 macro_rules! try_outcome {
@@ -106,12 +106,7 @@ pub async fn run_http_server(
         .manage(db)
         .mount("/", routes::index::routes())
         .mount("/admin", routes::admin::routes())
-        .mount("/api", {
-            let mut res = Vec::with_capacity(10);
-            res.extend(routes::index::api_routes().into());
-            res.extend(routes::admin::routes().into());
-            res
-        })
+        .mount("/api", routes::api::routes())
         .configure(rocket_config)
         .ignite()
         .await?

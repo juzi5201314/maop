@@ -1,5 +1,1 @@
-
-utils::pub_mods!(
-    index,
-    admin
-);
+utils::pub_mods!(index, admin, api);

@@ -23,3 +23,5 @@ byte_unit_format = "The format of the byte unit is: `10kb`"
 
 [http]
 unsupported_resp_type = "Unsupported type"
+authentication_failed = "Authentication failed"
+password_file_missing = "If the local password file is lost, the authentication will never succeed. Please restart the software to automatically generate a password."
