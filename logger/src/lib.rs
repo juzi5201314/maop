@@ -132,8 +132,8 @@ impl Logger {
             conf.log().filter().get(record.crate_name)
         {
             if let Ok(lvl) = Level::from_str(level) {
-                if record.level < lvl  {
-                    return
+                if record.level < lvl {
+                    return;
                 }
             }
         }

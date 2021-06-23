@@ -43,7 +43,15 @@ impl<'reg> TemplateGroup<'reg> {
         Ok(())
     }
 
-    pub fn render<S, D>(&self, name: S, data: &D) -> Result<String, handlebars::RenderError> where S: AsRef<str>, D: Serialize {
+    pub fn render<S, D>(
+        &self,
+        name: S,
+        data: &D,
+    ) -> Result<String, handlebars::RenderError>
+    where
+        S: AsRef<str>,
+        D: Serialize,
+    {
         self.hbs.render(name.as_ref(), data)
     }
 

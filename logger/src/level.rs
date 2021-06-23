@@ -24,7 +24,7 @@ impl From<log::Level> for Level {
             log::Level::Warn => Level::Warning,
             log::Level::Debug => Level::Debug,
             log::Level::Info => Level::Info,
-            log::Level::Trace => Level::Debug
+            log::Level::Trace => Level::Debug,
         }
     }
 }

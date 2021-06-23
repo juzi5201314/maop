@@ -39,10 +39,7 @@ where
     })
 }
 
-pub fn get_default<'a, D, S>(
-    key: S,
-    default: D,
-) -> anyhow::Result<D>
+pub fn get_default<'a, D, S>(key: S, default: D) -> anyhow::Result<D>
 where
     S: AsRef<[u8]>,
     D: Se + De<'a>,
@@ -60,10 +57,10 @@ pub fn get_else_default<'a, D, S, F>(
     key: S,
     default: F,
 ) -> anyhow::Result<D>
-    where
-        S: AsRef<[u8]>,
-        D: Se + De<'a>,
-        F: FnOnce() -> D,
+where
+    S: AsRef<[u8]>,
+    D: Se + De<'a>,
+    F: FnOnce() -> D,
 {
     match get(&key)? {
         Some(v) => Ok(v),

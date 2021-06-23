@@ -1,13 +1,17 @@
 use pprof::ProfilerGuard;
-use std::fs::File;
 use regex::Regex;
+use std::fs::File;
 
 pub fn start<'a>() -> ProfilerGuard<'a> {
     pprof::ProfilerGuard::new(50).unwrap()
 }
 
 pub fn report(guard: &ProfilerGuard) {
-    if let Ok(report) = guard.report().frames_post_processor(frames_post_processor()).build() {
+    if let Ok(report) = guard
+        .report()
+        .frames_post_processor(frames_post_processor())
+        .build()
+    {
         let mut options = pprof::flamegraph::Options::default();
         //options.image_width = Some(2500);
         options.count_name = "calls".to_string();

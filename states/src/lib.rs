@@ -1,4 +1,3 @@
-
 use std::sync::atomic::Ordering;
 
 use once_cell::sync::Lazy;

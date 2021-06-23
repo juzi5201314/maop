@@ -41,11 +41,16 @@ pub fn format(record: Arc<Record>) -> String {
             .on_bright_white(),
         lvl = level_color(record.level),
         //crate_name = record.crate_name.bright_cyan(),
-        module_path = if *config::get_config().as_ref().log().full_module_path() {
+        module_path = if *config::get_config()
+            .as_ref()
+            .log()
+            .full_module_path()
+        {
             record.module_path
         } else {
             record.crate_name
-        }.purple(),
+        }
+        .purple(),
         /*debug = if record.level == Level::Debug {
             format!(
                 "{}::{}:{} ",

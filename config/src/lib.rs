@@ -8,9 +8,9 @@ use arc_swap::ArcSwap;
 use notify::{RecursiveMode, Watcher};
 use once_cell::sync::Lazy;
 
+use anyhow::Context;
 pub use models::*;
 use utils::*;
-use anyhow::Context;
 
 mod models;
 
@@ -30,10 +30,13 @@ macro_rules! gen_config {
 }
 
 pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = std::env::var("DATA_PATH").unwrap_or_else(|_| String::from("data"));
+    let path = std::env::var("DATA_PATH")
+        .unwrap_or_else(|_| String::from("data"));
     let path = Path::new(&path);
     if !path.exists() || !path.is_dir() {
-        std::fs::create_dir_all(&path).with_context(|| i18n!("errors.io.create_dir_error")).unwrap();
+        std::fs::create_dir_all(&path)
+            .with_context(|| i18n!("errors.io.create_dir_error"))
+            .unwrap();
     }
     path.to_path_buf()
 });
@@ -75,7 +78,10 @@ impl Config {
         )?;
 
         dotenv::dotenv().ok();
-        c.merge(config_rs::Environment::with_prefix("MAOP").separator("_"))?;
+        c.merge(
+            config_rs::Environment::with_prefix("MAOP")
+                .separator("_"),
+        )?;
 
         config_files.iter().try_for_each(|file_name| {
             c.merge(

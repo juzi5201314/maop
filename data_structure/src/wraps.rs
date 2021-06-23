@@ -1,7 +1,6 @@
-
 use serde::{Deserialize, Serialize};
 
-use config::{RocketConfig, get_config};
+use config::{get_config, RocketConfig};
 use database::models::post::Post;
 use database::Database;
 
