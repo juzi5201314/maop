@@ -1,33 +1,12 @@
 [database]
-timeout = "10s"
-max_conn = 100
-min_conn = 0
+timeout = "5s"
+max_conn = 50
+min_conn = 1
 max_lifetime = "12h"
 idle_timeout = "1h"
-uri = "sqlite:data/default.db"
+uri = "sqlite:maop_data/default.db"
 # Database operations exceeding the specified execution time will issue a warning
-warn_time = "1s"
-
-[settings]
-sled_cache_capacity = "10kb"
-sled_use_compression = true
-sled_compression_factor = 5
-# sled automatic flush interval. Under normal circumstances, there is no need to specify, settings will be flushed every time they are changed
-# sled_flush_every_ms = "500ms"
-
-[rocket]
-port = 7070
-addr = "0.0.0.0"
-# Number of threads to use for executing futures. (default: num_cores)
-# workers = 1
-
-# Keep-alive timeout in seconds; disabled when 0. (default: 5)
-# keep_alive = 5
-
-# Streaming read size limits.
-# [rocket.limits]
-# "pet/dog/bingo" = "10kb"
-# json = "10mb"
+warn_time = "3s"
 
 [log]
 # Every time it is output to stdout, it will be flushed.

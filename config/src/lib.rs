@@ -4,11 +4,11 @@ use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Duration;
 
-use arc_swap::ArcSwap;
+use anyhow::Context;
+use arc_swap::{ArcSwap, Guard};
 use notify::{RecursiveMode, Watcher};
 use once_cell::sync::Lazy;
 
-use anyhow::Context;
 pub use models::*;
 use utils::*;
 
@@ -31,7 +31,7 @@ macro_rules! gen_config {
 
 pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = std::env::var("DATA_PATH")
-        .unwrap_or_else(|_| String::from("data"));
+        .unwrap_or_else(|_| String::from("maop_data"));
     let path = Path::new(&path);
     if !path.exists() || !path.is_dir() {
         std::fs::create_dir_all(&path)
@@ -46,16 +46,16 @@ pub static CONFIG: Lazy<Config> = Lazy::new(|| {
     Config::new().expect(&i18n!("errors.config.init_failed"))
 });
 
-pub fn get_config() -> Arc<MaopConfig> {
-    Arc::clone(&CONFIG.main).load_full()
+#[inline(always)]
+pub fn get_config() -> Guard<Arc<MaopConfig>> {
+    CONFIG.main.load()
 }
 
 #[test]
 fn config_test() {
-    let coo = Config::new().unwrap();
-    let b = coo.main.clone().load();
-    let a = b.rocket();
-    dbg!(a);
+    let mut c = get_config();
+    let a = c.database().uri();
+    assert_eq!(a, "sqlite:maop_data/default.db")
 }
 
 pub struct Config {
