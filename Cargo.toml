@@ -11,7 +11,8 @@ members = [
     "database",
     "http",
     "data_structure",
-    "settings"
+    "settings",
+    "error"
 ]
 
 [profile.release]
