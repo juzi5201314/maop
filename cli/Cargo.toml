@@ -10,3 +10,8 @@ edition = "2018"
 core = { path = "../core" }
 
 tokio = { version = "1", features = ["full"] }
+snmalloc-rs = { version = "0.2", optional = true, features = ["cache-friendly"] }
+
+[features]
+default = ["snmalloc-rs"]
+native-cpu = ["snmalloc-rs/native-cpu"]
