@@ -6,5 +6,11 @@ pub enum Error {
     Rbatis(#[from] rbatis::Error),
 
     #[error("database error: {0} (sqlx)")]
-    Sqlx(#[from] sqlx::Error)
+    Sqlx(#[from] sqlx::Error),
+
+    #[error("addr parse error: {0}")]
+    AddrParse(#[from] std::net::AddrParseError),
+
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
 }

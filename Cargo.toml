@@ -11,7 +11,6 @@ members = [
     "database",
     "http",
     "data_structure",
-    "settings",
     "error"
 ]
 

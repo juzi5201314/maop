@@ -3,5 +3,6 @@ use crate::models::*;
 #[rustfmt::skip]
 crate::gen_config!(MaopConfig, {
     database: DatabaseConfig,
-    log: LogConfig
+    log: LogConfig,
+    http: HttpConfig
 });
