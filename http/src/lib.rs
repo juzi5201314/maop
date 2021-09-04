@@ -3,21 +3,27 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
+use async_session::MemoryStore;
 use axum::handler::get;
-use axum::Router;
+use axum::{AddExtensionLayer, Router};
 use tokio::net::TcpListener;
 
 use error::Error;
+use once_cell::sync::OnceCell;
 
 use crate::routes::index::index;
 
 mod routes;
+mod auth;
+mod error;
 
 pub async fn run_http_server() -> Result<(), Error> {
     let conf_guard = config::get_config();
     let config = conf_guard.http();
 
-    let axum_app = Router::new().route("/", get(index));
+    let axum_app = Router::new()
+        .route("/", get(index))
+        .layer(AddExtensionLayer::new(MemoryStore::new()));
 
     if config.r#type() == "unix" {
         #[cfg(target_os = "unix")]
@@ -35,8 +41,7 @@ pub async fn run_http_server() -> Result<(), Error> {
             IpAddr::from_str(config.bind())?,
             *config.port(),
         );
-        hyper::Server::bind(&addr)
-            .serve(axum_app.into_make_service())
+        hyper::Server::bind(&addr).serve(axum_app.into_make_service())
     };
 
     Ok(())

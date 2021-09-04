@@ -8,6 +8,11 @@ uri = "sqlite:maop_data/default.db"
 # Database operations exceeding the specified execution time will issue a warning
 warn_time = "3s"
 
+[http]
+bind = "127.0.0.1"
+port = "7474"
+type = "tcp"
+
 [log]
 # Every time it is output to stdout, it will be flushed.
 # Turning on this option can prevent the log messages of the console from being confused

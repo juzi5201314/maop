@@ -25,6 +25,8 @@ cookie = "0.15.0"
 argon2 = "0.2"
 rand_core = "0.6"
 passwords = "3.1.7"
+async-session = "3.0.0"
+async-trait = "0.1.51"
 
 axum = "0.2"
 hyper = { version = "0.14", features = ["full"] }
