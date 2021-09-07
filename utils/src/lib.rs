@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 pub mod ser_de;
 pub mod unit;
+pub mod password_hash;
 
 #[macro_export]
 macro_rules! builder {
