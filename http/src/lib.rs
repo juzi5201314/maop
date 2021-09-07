@@ -32,9 +32,14 @@ pub async fn run_http_server() -> Result<(), Error> {
         #[cfg(target_os = "unix")]
         {
             use hyperlocal::UnixServerExt;
-            hyper::Server::bind_unix(config.bind())?
-                .serve(axum_app.into_make_service())
-                .await
+            let server = hyper::Server::bind_unix(config.bind())?
+                .serve(axum_app.into_make_service());
+            log::info!("listen on unix://{}", config.bind());
+
+            let graceful = server.with_graceful_shutdown(async {
+                tokio::signal::ctrl_c().await.unwrap();
+            });
+            graceful.await
         }
         #[cfg(not(target_os = "unix"))]
         {
@@ -45,15 +50,21 @@ pub async fn run_http_server() -> Result<(), Error> {
             IpAddr::from_str(config.bind())?,
             *config.port(),
         );
-        hyper::Server::bind(&addr)
-            .serve(axum_app.into_make_service())
-            .await
-    };
+        let server = hyper::Server::bind(&addr)
+            .serve(axum_app.into_make_service());
+
+        log::info!("listen on http://{}", server.local_addr());
+
+        let graceful = server.with_graceful_shutdown(async {
+                tokio::signal::ctrl_c().await.unwrap();
+            });
+        graceful.await
+    }.unwrap();
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_http_server() {
-    run_http_server().await;
+    run_http_server().await.unwrap();
 }

@@ -1399,6 +1399,7 @@ dependencies = [
  "handlebars",
  "hyper",
  "hyperlocal",
+ "log",
  "logger",
  "quick-xml 0.22.0",
  "rmp-serde",
