@@ -1,70 +1,104 @@
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use std::fs::File;
+use std::io::Read;
+use std::ops::Deref;
+use walkdir::WalkDir;
 
 #[derive(rust_embed::RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/small"]
-struct DefaultTemplate;
+pub struct EmbedTemplateProvider;
 
-pub enum Provider {
-    Fs(PathBuf),
-    Default,
+pub struct LocalFilesProvider(pub PathBuf);
+
+pub trait Provider {
+    fn get_all(&self)
+        -> Vec<(Cow<'static, [u8]>, Cow<'static, str>)>;
 }
 
-impl Provider {
-    pub fn new_fs<P>(path: P) -> Self
-    where
-        P: AsRef<Path>,
-    {
-        Provider::Fs(path.as_ref().to_path_buf())
-    }
-
-    pub async fn get_content(
+impl Provider for EmbedTemplateProvider {
+    fn get_all(
         &self,
-        path: &Cow<'static, str>,
-    ) -> anyhow::Result<Cow<'static, [u8]>> {
-        Ok(match self {
-            Provider::Fs(_) => {
-                let mut data = Vec::new();
-                File::open(path.as_ref())
-                    .await?
-                    .read_to_end(&mut data)
-                    .await?;
-                Cow::Owned(data)
-            }
-            Provider::Default => DefaultTemplate::get(path)
-                .ok_or_else(|| {
-                    anyhow::anyhow!("Unexpected embed template error")
-                })?,
-        })
-    }
-
-    pub fn get_hbs(&self) -> anyhow::Result<Vec<Cow<'static, str>>> {
-        Ok(match self {
-            Provider::Fs(path) => path
-                .read_dir()?
-                .filter_map(Result::ok)
-                .filter(|dir_entry| {
-                    let pb: PathBuf = dir_entry.path();
-                    pb.extension()
-                        .map(|s| s == ".hbs")
-                        .unwrap_or(false)
-                })
-                .filter_map(|pb| {
-                    pb.path()
-                        .to_str()
-                        .map(|s| Cow::Owned(s.to_owned()))
-                })
-                .collect(),
-            Provider::Default => DefaultTemplate::iter().collect(),
-        })
+    ) -> Vec<(Cow<'static, [u8]>, Cow<'static, str>)> {
+        Self::iter()
+            .map(|path| {
+                (
+                    Self::get(&*path).unwrap().data,
+                    Cow::Owned(
+                        Path::new(&*path)
+                            .file_name()
+                            .unwrap()
+                            .to_string_lossy()
+                            .trim_end_matches(".hbs")
+                            .to_owned(),
+                    ),
+                )
+            })
+            .collect()
     }
 }
 
-impl Default for Provider {
-    fn default() -> Self {
-        Provider::Default
+impl Provider for LocalFilesProvider {
+    fn get_all(
+        &self,
+    ) -> Vec<(Cow<'static, [u8]>, Cow<'static, str>)> {
+        WalkDir::new(&self.0)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+            .filter(|e| e.path().ends_with(".hbs"))
+            .map(|e| {
+                File::open(e.path()).map(move |mut file| {
+                    let mut data = Vec::with_capacity(
+                        file.metadata()
+                            .map(|meta| meta.len())
+                            .unwrap_or_default()
+                            as usize,
+                    );
+                    file.read_to_end(&mut data)?;
+                    Ok((
+                        Cow::Owned(data),
+                        Cow::Owned(
+                            e.file_name()
+                                .to_string_lossy()
+                                .trim_end_matches(".hbs")
+                                .to_owned(),
+                        ),
+                    ))
+                })
+            })
+            .filter_map(|res| {
+                res.flatten()
+                    .map_err(|err| {
+                        log::warn!(
+                            "failed to read template file. {:?}",
+                            err
+                        );
+                        err
+                    })
+                    .ok()
+            })
+            .collect()
+    }
+}
+
+pub struct TemplateProvider(pub Box<dyn Provider>);
+
+impl TemplateProvider {
+    pub fn new<P>(provider: P) -> Self
+    where
+        P: Provider + 'static,
+    {
+        TemplateProvider(box provider)
+    }
+}
+
+impl Deref for TemplateProvider {
+    type Target = Box<dyn Provider>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

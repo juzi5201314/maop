@@ -1,43 +1,48 @@
-use std::path::Path;
+#![feature(result_flattening)]
+#![feature(box_syntax)]
+
+use std::path::{Path, PathBuf};
 
 use handlebars::Handlebars;
 use serde::Serialize;
 
-use crate::template_provider::Provider;
+use crate::template_provider::{
+    EmbedTemplateProvider, LocalFilesProvider, Provider,
+    TemplateProvider,
+};
 
 mod template_provider;
 
-pub struct TemplateGroup<'reg> {
+pub struct TemplateManager<'reg> {
     hbs: Handlebars<'reg>,
-    provider: Provider,
+    provider: TemplateProvider,
 }
 
-impl<'reg> TemplateGroup<'reg> {
-    pub fn new<P>(path: Option<P>) -> Self
-    where
-        P: AsRef<Path>,
-    {
-        TemplateGroup {
+impl<'reg> TemplateManager<'reg> {
+    pub fn new(path: Option<PathBuf>) -> Self {
+        TemplateManager {
             hbs: {
                 let mut hbs = Handlebars::new();
                 hbs.set_strict_mode(true);
+                #[cfg(debug_assertions)]
+                hbs.set_dev_mode(true);
                 hbs
             },
-            provider: path
-                .map(|path| Provider::new_fs(path))
-                .unwrap_or_default(),
+            provider: match path {
+                None => TemplateProvider::new(EmbedTemplateProvider),
+                Some(path) => {
+                    TemplateProvider::new(LocalFilesProvider(path))
+                }
+            },
         }
     }
 
-    pub async fn load(&mut self) -> anyhow::Result<()> {
-        for path in self.provider.get_hbs()?.iter() {
-            if path.ends_with(".hbs") {
-                let data = self.provider.get_content(&path).await?;
-                self.hbs.register_template_string(
-                    path.trim_end_matches(".hbs"),
-                    std::str::from_utf8(&data)?,
-                )?;
-            }
+    pub fn load(&mut self) -> anyhow::Result<()> {
+        for (data, name) in &self.provider.get_all() {
+            self.hbs.register_template_string(
+                name,
+                std::str::from_utf8(data).unwrap(),
+            )?;
         }
 
         Ok(())
@@ -64,49 +69,8 @@ impl<'reg> TemplateGroup<'reg> {
 struct A;
 #[tokio::test]
 async fn render_test() {
-    let mut tg = TemplateGroup::new::<String>(None);
-    tg.load().await.unwrap();
+    let mut tg = TemplateManager::new(None);
+    tg.load().unwrap();
     dbg!(tg.hbs.get_templates());
     dbg!(tg.render("index", &A));
 }
-
-// TODO: jekyll compatible
-/*#[cfg(test)]
-mod tests {
-    #[tokio::test]
-    async fn template_test() {
-        use liquid::partials::{InMemorySource, LazyCompiler};
-        let template = liquid::ParserBuilder::with_stdlib()
-            .tag(liquid_lib::jekyll::IncludeTag)
-            .partials(LazyCompiler::new({
-                let mut source = InMemorySource::new();
-                source.add(
-                    "head.html",
-                    include_str!(
-                        "../tests/monophase/_includes/head.html"
-                    ),
-                );
-                source
-            }))
-            .build()
-            .unwrap()
-            //.parse("{% include \"head.html\" %}")
-            .parse(include_str!(
-                "../tests/monophase/_layouts/default.html"
-            ))
-            .unwrap();
-
-        let globals = liquid::object!({
-            "page": liquid::object!({
-                "lang": "zh"
-            }),
-            "site": liquid::object!({
-                "lang": "zh"
-            }),
-        });
-
-        let output = template.render(&globals).unwrap();
-        dbg!(output);
-    }
-}
-*/
