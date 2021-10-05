@@ -1,5 +1,4 @@
 pub use simple_i18n::{i18n, lang};
-use std::str::FromStr;
 
 pub mod ser_de;
 pub mod unit;

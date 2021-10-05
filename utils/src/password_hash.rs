@@ -1,5 +1,6 @@
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, ParamsBuilder, PasswordHasher, Version, PasswordHash, PasswordVerifier};
+use compact_str::CompactStr;
 use rand_core::OsRng;
 use serde::{Deserializer, Deserialize};
 use once_cell::sync::Lazy;
@@ -18,7 +19,7 @@ static ARGON2: Lazy<Argon2> = Lazy::new(|| Argon2::new(Algorithm::Argon2id, Vers
 }));
 
 pub fn password_hash<'de, D>(arg: D) -> Result<Option<String>, D::Error> where D: Deserializer<'de> {
-    let password = match Option::<String>::deserialize(arg)? {
+    let password = match Option::<CompactStr>::deserialize(arg)? {
         None => return Ok(None),
         Some(password) => password
     };
