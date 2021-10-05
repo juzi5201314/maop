@@ -29,18 +29,6 @@ macro_rules! gen_config {
     };
 }
 
-pub static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = std::env::var("DATA_PATH")
-        .unwrap_or_else(|_| String::from("maop_data"));
-    let path = Path::new(&path);
-    if !path.exists() || !path.is_dir() {
-        std::fs::create_dir_all(&path)
-            .with_context(|| i18n!("errors.io.create_dir_error"))
-            .unwrap();
-    }
-    path.to_path_buf()
-});
-
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
     #[allow(clippy::expect_fun_call)]
     Config::new().expect(&i18n!("errors.config.init_failed"))
@@ -100,6 +88,16 @@ impl Config {
                     err
                 )
             })?;
+
+        let path = maop_config.data_path();
+        if !path.exists() {
+            std::fs::create_dir_all(&path)
+                .with_context(|| i18n!("errors.io.create_dir_error"))
+                .unwrap();
+        } else if !path.is_dir() {
+            panic!("`{:?}` no a dir", path);
+        }
+
         Ok(Config {
             main: Arc::new(ArcSwap::from_pointee(maop_config)),
             inner: c,
