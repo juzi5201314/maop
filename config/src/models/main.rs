@@ -4,5 +4,6 @@ use crate::models::*;
 crate::gen_config!(MaopConfig, {
     database: DatabaseConfig,
     log: LogConfig,
-    http: HttpConfig
+    http: HttpConfig,
+    render: RenderConfig
 });

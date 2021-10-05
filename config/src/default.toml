@@ -11,7 +11,10 @@ warn_time = "3s"
 [http]
 bind = "127.0.0.1"
 port = "7474"
-type = "tcp"
+type = "http"
+
+[render]
+default_render = "ssr"
 
 [log]
 # Every time it is output to stdout, it will be flushed.

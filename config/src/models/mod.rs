@@ -3,5 +3,6 @@ utils::pub_mods!(
     main,
     database,
     log,
-    http
+    http,
+    render
 );
