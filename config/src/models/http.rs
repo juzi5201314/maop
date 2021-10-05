@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use compact_str::CompactStr;
 
-#[derive(Deserialize, Serialize, Debug, Copy, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum ListenType {
     Http,
@@ -8,7 +8,7 @@ pub enum ListenType {
 }
 
 crate::gen_config!(HttpConfig, {
-    bind: String,
+    bind: CompactStr,
     port: u16,
     r#type: ListenType,
     #[serde(default)]

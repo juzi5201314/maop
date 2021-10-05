@@ -5,5 +5,6 @@ crate::gen_config!(MaopConfig, {
     database: DatabaseConfig,
     log: LogConfig,
     http: HttpConfig,
-    render: RenderConfig
+    render: RenderConfig,
+    site: SiteConfig
 });

@@ -15,6 +15,8 @@ type = "http"
 
 [render]
 default_render = "ssr"
+strict_mode = true
+dev_mode = false
 
 [log]
 # Every time it is output to stdout, it will be flushed.
