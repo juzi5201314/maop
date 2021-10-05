@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use compact_str::CompactStr;
 use rbatis::core::value::DateTimeNow;
 use rbatis::crud::CRUDMut;
 use rbatis::crud::{Skip, CRUD};
@@ -12,8 +13,8 @@ use crate::models::commit::{Commits, NewCommit};
 #[derive(Default, Clone)]
 pub struct NewPost<S1, S2>
 where
-    S1: Into<String> + Clone,
-    S2: Into<String> + Clone,
+    S1: Into<CompactStr> + Clone,
+    S2: Into<CompactStr> + Clone,
 {
     pub title: S1,
     pub content: S2,
@@ -23,8 +24,8 @@ where
 pub struct Posts {
     pub id: u64,
 
-    pub title: String,
-    pub content: String,
+    pub title: CompactStr,
+    pub content: CompactStr,
 
     pub create_time: NaiveDateTime,
     pub last_modified_time: NaiveDateTime,
@@ -61,8 +62,8 @@ impl Posts {
         new_post: NewPost<S1, S2>,
     ) -> Result<Self, Error>
     where
-        S1: Into<String> + Clone,
-        S2: Into<String> + Clone,
+        S1: Into<CompactStr> + Clone,
+        S2: Into<CompactStr> + Clone,
     {
         let mut tx = rb.acquire_begin().await?;
 
@@ -93,8 +94,8 @@ impl Posts {
         new_post: NewPost<S1, S2>,
     ) -> Result<NaiveDateTime, Error>
     where
-        S1: Into<String> + Clone,
-        S2: Into<String> + Clone,
+        S1: Into<CompactStr> + Clone,
+        S2: Into<CompactStr> + Clone,
     {
         let w = rb.new_wrapper().eq("id", id);
         let now_time = NaiveDateTime::now();
@@ -125,8 +126,8 @@ impl Posts {
         new_post: NewPost<S1, S2>,
     ) -> Result<(), Error>
     where
-        S1: Into<String> + Clone,
-        S2: Into<String> + Clone,
+        S1: Into<CompactStr> + Clone,
+        S2: Into<CompactStr> + Clone,
     {
         let update_time =
             Self::update_by_id(rb, id, new_post.clone()).await?;
@@ -144,10 +145,22 @@ impl Posts {
         reply_to: Option<u64>,
     ) -> Result<Commits, Error>
     where
-        S1: Into<String> + Clone,
-        S2: Into<String> + Clone,
-        S3: Into<String> + Clone,
+        S1: Into<CompactStr> + Clone,
+        S2: Into<CompactStr> + Clone,
+        S3: Into<CompactStr> + Clone,
     {
         Commits::insert(rb, self.id, new_commit, reply_to).await
+    }
+
+    #[inline]
+    pub async fn query_comments(
+        &self,
+        rb: &Rbatis,
+    ) -> Result<Vec<Commits>, Error> {
+        rb.fetch_list_by_wrapper(
+            &rb.new_wrapper().eq("post_id", self.id),
+        )
+        .await
+        .map_err(Into::into)
     }
 }

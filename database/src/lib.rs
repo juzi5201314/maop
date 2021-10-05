@@ -15,7 +15,7 @@ mod test {
     async fn commit_curd_test() {
         set_var("maop_database_uri", "sqlite::memory:");
         let conf = config::get_config();
-        let rb: Rbatis = db::new(conf.database()).await.unwrap();
+        let rb: Rbatis = db::new(&conf).await.unwrap();
 
         let mut post: Posts = Posts::insert(&rb, NewPost {
             title: "title",
@@ -46,7 +46,7 @@ mod test {
     async fn post_curd_test() {
         set_var("maop_database_uri", "sqlite::memory:");
         let conf = config::get_config();
-        let rb: Rbatis = db::new(conf.database()).await.unwrap();
+        let rb: Rbatis = db::new(&conf).await.unwrap();
 
         // insert
         let mut post: Posts = Posts::insert(&rb, NewPost {

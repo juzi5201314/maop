@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use compact_str::CompactStr;
 use rbatis::core::value::DateTimeNow;
 use rbatis::crud::CRUDMut;
 use rbatis::crud::{Skip, CRUD};
@@ -10,9 +11,9 @@ use error::Error;
 #[derive(Default, Clone)]
 pub struct NewCommit<S1, S2, S3>
 where
-    S1: Into<String> + Clone,
-    S2: Into<String> + Clone,
-    S3: Into<String> + Clone,
+    S1: Into<CompactStr> + Clone,
+    S2: Into<CompactStr> + Clone,
+    S3: Into<CompactStr> + Clone,
 {
     pub content: S1,
     pub nickname: S2,
@@ -25,12 +26,12 @@ pub struct Commits {
 
     /// 对应的文章
     pub post_id: u64,
-    pub content: String,
+    pub content: CompactStr,
     pub create_time: NaiveDateTime,
     /// 发布者邮箱
-    pub email: String,
+    pub email: CompactStr,
     /// 发布者昵称
-    pub nickname: String,
+    pub nickname: CompactStr,
 
     /// 回复的评论id
     pub parent_id: Option<u64>,
@@ -69,9 +70,9 @@ impl Commits {
         reply_to: Option<u64>,
     ) -> Result<Self, Error>
     where
-        S1: Into<String> + Clone,
-        S2: Into<String> + Clone,
-        S3: Into<String> + Clone,
+        S1: Into<CompactStr> + Clone,
+        S2: Into<CompactStr> + Clone,
+        S3: Into<CompactStr> + Clone,
     {
         let mut tx = rb.acquire_begin().await?;
 
@@ -103,9 +104,9 @@ impl Commits {
         new_commit: NewCommit<S1, S2, S3>,
     ) -> Result<Self, Error>
     where
-        S1: Into<String> + Clone,
-        S2: Into<String> + Clone,
-        S3: Into<String> + Clone,
+        S1: Into<CompactStr> + Clone,
+        S2: Into<CompactStr> + Clone,
+        S3: Into<CompactStr> + Clone,
     {
         Self::insert(rb, self.post_id, new_commit, Some(self.id))
             .await
