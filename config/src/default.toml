@@ -1,3 +1,7 @@
+[site]
+name = "Maop"
+title = "A default title for maop"
+
 [database]
 timeout = "5s"
 max_conn = 50
