@@ -5,7 +5,6 @@ pub mod models;
 
 #[cfg(test)]
 mod test {
-    use std::env::set_var;
     use rbatis::rbatis::Rbatis;
     use crate::db;
     use crate::models::post::{Posts, NewPost};
@@ -13,11 +12,10 @@ mod test {
 
     #[tokio::test]
     async fn commit_curd_test() {
-        set_var("maop_database_uri", "sqlite::memory:");
         let conf = config::get_config();
         let rb: Rbatis = db::new(&conf).await.unwrap();
 
-        let mut post: Posts = Posts::insert(&rb, NewPost {
+        let post: Posts = Posts::insert(&rb, NewPost {
             title: "title",
             content: "content"
         }).await.unwrap();
@@ -44,7 +42,6 @@ mod test {
 
     #[tokio::test]
     async fn post_curd_test() {
-        set_var("maop_database_uri", "sqlite::memory:");
         let conf = config::get_config();
         let rb: Rbatis = db::new(&conf).await.unwrap();
 

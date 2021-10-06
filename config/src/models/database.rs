@@ -1,4 +1,3 @@
-use compact_str::CompactStr;
 use utils::unit::time_unit::TimeUnit;
 
 crate::gen_config!(DatabaseConfig, {
@@ -7,5 +6,10 @@ crate::gen_config!(DatabaseConfig, {
     min_conn: u32,
     max_lifetime: TimeUnit,
     idle_timeout: TimeUnit,
-    warn_time: TimeUnit
+    warn_time: TimeUnit,
+
+    shared_cache: bool,
+    statement_cache_capacity: usize,
+
+    page_size: u32
 });

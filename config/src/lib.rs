@@ -1,5 +1,5 @@
 use std::fs::read_dir;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Duration;
@@ -68,7 +68,7 @@ impl Config {
         dotenv::dotenv().ok();
         c.merge(
             config_rs::Environment::with_prefix("MAOP")
-                .separator("_"),
+                .separator("__"),
         )?;
 
         config_files.iter().try_for_each(|file_name| {

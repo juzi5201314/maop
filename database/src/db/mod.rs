@@ -1,13 +1,14 @@
 use rbatis::core::db::{DBConnectOption, DBPoolOptions};
+use rbatis::executor::Executor;
 use rbatis::rbatis::Rbatis;
 use rbatis::DriverType;
-use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::sqlite::{
+    SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous,
+};
 use sqlx::ConnectOptions;
 
 use config::MaopConfig;
-use std::str::FromStr;
 use error::Error;
-use rbatis::executor::Executor;
 
 pub async fn new(m_config: &MaopConfig) -> Result<Rbatis, Error> {
     let config = m_config.database();
@@ -16,10 +17,17 @@ pub async fn new(m_config: &MaopConfig) -> Result<Rbatis, Error> {
         &DBConnectOption {
             driver_type: DriverType::Sqlite,
             sqlite: Some({
-                let mut opt =
-                    SqliteConnectOptions::new()
-                        .filename(m_config.data_path().join("main.db"))
-                        .create_if_missing(true);
+                let mut opt = SqliteConnectOptions::new()
+                    .filename(m_config.data_path().join("main.db"))
+                    .journal_mode(SqliteJournalMode::Wal)
+                    .synchronous(SqliteSynchronous::Normal)
+                    .create_if_missing(true)
+                    .statement_cache_capacity(
+                        *config.statement_cache_capacity(),
+                    )
+                    .page_size(*config.page_size())
+                    .shared_cache(*config.shared_cache());
+
                 opt.log_statements(log::LevelFilter::Debug);
                 opt.log_slow_statements(
                     log::LevelFilter::Warn,
@@ -36,8 +44,11 @@ pub async fn new(m_config: &MaopConfig) -> Result<Rbatis, Error> {
             idle_timeout: Some(*config.idle_timeout().duration()),
             test_before_acquire: true,
         },
-    ).await?;
-    rb.exec(include_str!("../sqls/create_posts.sql"), &vec![]).await?;
-    rb.exec(include_str!("../sqls/create_commits.sql"), &vec![]).await?;
+    )
+    .await?;
+    rb.exec(include_str!("../sqls/create_posts.sql"), &vec![])
+        .await?;
+    rb.exec(include_str!("../sqls/create_commits.sql"), &vec![])
+        .await?;
     Ok(rb)
 }

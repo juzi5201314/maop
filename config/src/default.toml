@@ -13,6 +13,9 @@ max_lifetime = "12h"
 idle_timeout = "1h"
 # Database operations exceeding the specified execution time will issue a warning
 warn_time = "3s"
+shared_cache = false
+statement_cache_capacity = 100
+page_size = 4096
 
 [http]
 bind = "127.0.0.1"
