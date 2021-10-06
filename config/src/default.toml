@@ -21,6 +21,7 @@ page_size = 4096
 bind = "127.0.0.1"
 port = "7474"
 type = "http"
+session_expiry = "30d"
 
 [render]
 default_render = "ssr"
