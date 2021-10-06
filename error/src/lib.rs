@@ -22,4 +22,7 @@ pub enum Error {
 
     #[error("render error: {0}")]
     Render(#[from] handlebars::RenderError),
+
+    #[error("rocksdb error: {0}")]
+    Rocksdb(#[from] rocksdb::Error)
 }
