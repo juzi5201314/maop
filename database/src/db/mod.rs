@@ -17,7 +17,8 @@ pub async fn new(m_config: &MaopConfig) -> Result<Rbatis, Error> {
             driver_type: DriverType::Sqlite,
             sqlite: Some({
                 let mut opt =
-                    SqliteConnectOptions::from_str(&config.uri().replace("{{data_path}}", &*m_config.data_path().to_string_lossy()))?
+                    SqliteConnectOptions::new()
+                        .filename(m_config.data_path().join("main.db"))
                         .create_if_missing(true);
                 opt.log_statements(log::LevelFilter::Debug);
                 opt.log_slow_statements(

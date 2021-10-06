@@ -11,8 +11,6 @@ max_conn = 50
 min_conn = 1
 max_lifetime = "12h"
 idle_timeout = "1h"
-# `{{data_path}}` will be replaced with `data_path`
-uri = "sqlite:{{data_path}}/default.db"
 # Database operations exceeding the specified execution time will issue a warning
 warn_time = "3s"
 
