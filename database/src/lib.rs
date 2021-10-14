@@ -8,10 +8,10 @@ mod test {
     use rbatis::rbatis::Rbatis;
     use crate::db;
     use crate::models::post::{Posts, NewPost};
-    use crate::models::commit::{Commits, NewCommit};
+    use crate::models::comment::{Comments, NewComment};
 
     #[tokio::test]
-    async fn commit_curd_test() {
+    async fn comment_curd_test() {
         let conf = config::get_config();
         let rb: Rbatis = db::new(&conf).await.unwrap();
 
@@ -20,24 +20,24 @@ mod test {
             content: "content"
         }).await.unwrap();
 
-        let hello_commit: Commits = post.reply(&rb, NewCommit {
+        let hello_comment: Comments = post.reply(&rb, NewComment {
             content: "hello",
             nickname: "God",
             email: "god@exmaple.com"
         }, None).await.unwrap();
-        assert_eq!(hello_commit.content, "hello");
-        assert_eq!(hello_commit.post_id, post.id);
+        assert_eq!(hello_comment.content, "hello");
+        assert_eq!(hello_comment.post_id, post.id);
 
-        let world_commit: Commits = hello_commit.reply_to(&rb, NewCommit {
+        let world_comment: Comments = hello_comment.reply_to(&rb, NewComment {
             content: "world",
             nickname: "Adam",
             email: "adam@exmaple.com"
         }).await.unwrap();
-        assert_eq!(world_commit.content, "world");
+        assert_eq!(world_comment.content, "world");
 
-        assert_eq!(world_commit.parent_id, Some(hello_commit.id));
+        assert_eq!(world_comment.parent_id, Some(hello_comment.id));
 
-        assert_eq!(hello_commit.query_replies(&rb).await.unwrap().first().map(|reply| reply.id), Some(world_commit.id));
+        assert_eq!(hello_comment.query_replies(&rb).await.unwrap().first().map(|reply| reply.id), Some(world_comment.id));
     }
 
     #[tokio::test]

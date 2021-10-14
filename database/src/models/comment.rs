@@ -9,7 +9,7 @@ use rbatis::rbatis::Rbatis;
 use error::Error;
 
 #[derive(Default, Clone)]
-pub struct NewCommit<S1, S2, S3>
+pub struct NewComment<S1, S2, S3>
 where
     S1: Into<CompactStr> + Clone,
     S2: Into<CompactStr> + Clone,
@@ -21,7 +21,7 @@ where
 }
 
 #[crud_table]
-pub struct Commits {
+pub struct Comments {
     pub id: u64,
 
     /// 对应的文章
@@ -52,7 +52,7 @@ fn deserialize<'de, D>(der: D) -> Result<bool, D::Error> where D: Deserializer<'
     Ok(u8::deserialize(der)? != 0)
 }
 
-impl Commits {
+impl Comments {
     #[inline]
     pub async fn query_all(rb: &Rbatis) -> Result<Vec<Self>, Error> {
         rb.fetch_list().await.map_err(Into::into)
@@ -65,7 +65,7 @@ impl Commits {
         id: u64,
     ) -> Result<(), Error> {
         rb.update_by_wrapper::<Self>(
-            &Commits {
+            &Comments {
                 id,
                 post_id: 0,
                 parent_id: Option::None,
@@ -110,7 +110,7 @@ impl Commits {
     pub async fn insert<S1, S2, S3>(
         rb: &Rbatis,
         post_id: u64,
-        new_commit: NewCommit<S1, S2, S3>,
+        new_comment: NewComment<S1, S2, S3>,
         reply_to: Option<u64>,
     ) -> Result<Self, Error>
     where
@@ -122,13 +122,13 @@ impl Commits {
 
         let last_id = tx
             .save(
-                &Commits {
+                &Comments {
                     id: 0,
                     post_id,
-                    content: new_commit.content.into(),
+                    content: new_comment.content.into(),
                     create_time: NaiveDateTime::now(),
-                    email: new_commit.email.into(),
-                    nickname: new_commit.nickname.into(),
+                    email: new_comment.email.into(),
+                    nickname: new_comment.nickname.into(),
                     parent_id: reply_to,
                     deleted: false,
                 },
@@ -137,23 +137,23 @@ impl Commits {
             .await?
             .last_insert_id
             .unwrap();
-        let commit = tx.fetch_by_column("id", &last_id).await?;
+        let comment = tx.fetch_by_column("id", &last_id).await?;
         tx.commit().await?;
-        Ok(commit)
+        Ok(comment)
     }
 
     #[inline]
     pub async fn reply_to<S1, S2, S3>(
         &self,
         rb: &Rbatis,
-        new_commit: NewCommit<S1, S2, S3>,
+        new_comment: NewComment<S1, S2, S3>,
     ) -> Result<Self, Error>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
         S3: Into<CompactStr> + Clone,
     {
-        Self::insert(rb, self.post_id, new_commit, Some(self.id))
+        Self::insert(rb, self.post_id, new_comment, Some(self.id))
             .await
     }
 

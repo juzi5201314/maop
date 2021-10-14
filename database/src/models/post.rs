@@ -8,7 +8,7 @@ use rbatis::rbatis::Rbatis;
 
 use error::Error;
 
-use crate::models::commit::{Commits, NewCommit};
+use crate::models::comment::{Comments, NewComment};
 
 #[derive(Default, Clone)]
 pub struct NewPost<S1, S2>
@@ -141,22 +141,22 @@ impl Posts {
     pub async fn reply<S1, S2, S3>(
         &self,
         rb: &Rbatis,
-        new_commit: NewCommit<S1, S2, S3>,
+        new_comment: NewComment<S1, S2, S3>,
         reply_to: Option<u64>,
-    ) -> Result<Commits, Error>
+    ) -> Result<Comments, Error>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
         S3: Into<CompactStr> + Clone,
     {
-        Commits::insert(rb, self.id, new_commit, reply_to).await
+        Comments::insert(rb, self.id, new_comment, reply_to).await
     }
 
     #[inline]
     pub async fn query_comments(
         &self,
         rb: &Rbatis,
-    ) -> Result<Vec<Commits>, Error> {
+    ) -> Result<Vec<Comments>, Error> {
         rb.fetch_list_by_wrapper(
             &rb.new_wrapper().eq("post_id", self.id),
         )

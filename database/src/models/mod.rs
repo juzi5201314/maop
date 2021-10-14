@@ -1,1 +1,1 @@
-utils::pub_mods!(post, commit);
+utils::pub_mods!(post, comment);
