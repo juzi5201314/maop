@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 database = { path = "../database" }
 utils = { path = "../utils" }
-data_structure = { path = "../data_structure" }
 config = { path = "../config" }
 logger = { path = "../logger" }
 error = { path = "../error" }
@@ -21,11 +20,9 @@ serde = { version = "1.0", features = ["derive"] }
 headers = "0.3.4"
 async-session = "3.0.0"
 async-trait = "0.1.51"
-chrono = "0.4.19"
 log = "0.4.14"
 compact_str = { version = "0.1", features = ["serde"] }
-tinyvec = { version = "1.3.1", features = ["alloc", "serde"] }
-rbatis = { version = "2.0", default-features = false }
+rbatis = { version = "2.1.3", default-features = false }
 bincode = "1.3"
 anyhow = "1.0"
 rocksdb = { version = "0.17", default-features = false, features = ["snappy"], optional = true }

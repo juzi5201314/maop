@@ -75,7 +75,7 @@ impl Comments {
                 nickname: CompactStr::default(),
                 deleted: true,
             },
-            &rb.new_wrapper().eq("id", id),
+            rb.new_wrapper().eq("id", id),
             &[
                 Skip::Column("id"),
                 Skip::Column("post_id"),
@@ -96,7 +96,7 @@ impl Comments {
         id: u64,
     ) -> Result<(), Error> {
         rb.remove_by_wrapper::<Self>(
-            &rb.new_wrapper().eq("id", id).or().eq("parent_id", id),
+            rb.new_wrapper().eq("id", id).or().eq("parent_id", id),
         )
         .await?;
         Ok(())
@@ -163,7 +163,7 @@ impl Comments {
         rb: &Rbatis,
     ) -> Result<Vec<Self>, Error> {
         rb.fetch_list_by_wrapper(
-            &rb.new_wrapper().eq("parent_id", self.id),
+            rb.new_wrapper().eq("parent_id", self.id),
         )
         .await
         .map_err(Into::into)

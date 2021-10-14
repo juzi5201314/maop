@@ -46,9 +46,9 @@ pub async fn new(m_config: &MaopConfig) -> Result<Rbatis, Error> {
         },
     )
     .await?;
-    rb.exec(include_str!("../sqls/create_posts.sql"), &vec![])
+    rb.exec(include_str!("../sqls/create_posts.sql"), vec![])
         .await?;
-    rb.exec(include_str!("../sqls/create_comments.sql"), &vec![])
+    rb.exec(include_str!("../sqls/create_comments.sql"), vec![])
         .await?;
     Ok(rb)
 }

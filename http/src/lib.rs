@@ -87,5 +87,6 @@ pub async fn run_http_server() -> Result<(), Error> {
 
 #[tokio::test]
 async fn test_http_server() {
+    logger::init();
     run_http_server().await.unwrap();
 }

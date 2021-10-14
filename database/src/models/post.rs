@@ -107,7 +107,7 @@ impl Posts {
                 create_time: now_time,
                 last_modified_time: now_time,
             },
-            &w,
+            w,
             &[
                 Skip::Value(serde_json::Value::Null),
                 Skip::Column("id"),
@@ -158,7 +158,7 @@ impl Posts {
         rb: &Rbatis,
     ) -> Result<Vec<Comments>, Error> {
         rb.fetch_list_by_wrapper(
-            &rb.new_wrapper().eq("post_id", self.id),
+            rb.new_wrapper().eq("post_id", self.id),
         )
         .await
         .map_err(Into::into)
