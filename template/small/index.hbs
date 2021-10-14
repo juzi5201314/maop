@@ -1,7 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-{{> header }}
-<body>
+{{#*inline "title"}}
+    {{site.title}}
+{{/inline}}
 
-</body>
-</html>
+{{#*inline "body"}}
+    <h1>
+        {{site.name}}
+    </h1>
+    <blockquote>
+        <p>
+            hi, {{#if logged}} admin. <b><a id="logout">logout</a></b>{{else}} guest. <b><a href="/auth">login</a></b> {{/if}}
+        </p>
+    </blockquote>
+
+    {{#each posts as |post|}}
+        <h2>
+            <a href="/post/{{post.id}}">{{post.title}}</a>
+        </h2>
+        {{truncate post.content 100 "..."}}
+        <br/>
+    {{/each}}
+
+    {{#if logged}}
+        <script>
+            window.document.getElementById("logout").addEventListener("click", () => {
+                post("/auth/logout", {}).then(response => {
+                    if (response.ok) {
+                        response.json().then(_ => window.location.reload());
+                    } else {
+                        alert_err_resp(response);
+                    }
+                });
+            })
+        </script>
+    {{/if}}
+{{/inline}}
+
+{{> html}}

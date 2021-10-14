@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -5,10 +6,11 @@ use axum::extract::{Extension, FromRequest, RequestParts};
 use axum::handler::get;
 use axum::response::Html;
 use axum::routing::BoxRoute;
-use axum::{Json, Router};
+use axum::{extract, Json, Router};
 use rbatis::rbatis::Rbatis;
 
 use config::SiteConfig;
+use database::models::comment::Comments;
 use database::models::post::Posts;
 
 use crate::login_status::LoginStatus;
@@ -33,11 +35,11 @@ pub fn routes() -> Router<BoxRoute> {
     router.boxed()
 }
 
-pub async fn index_ssr<'a>(
+pub async fn index_ssr<'reg>(
     data: Data,
-    Extension(tm): Extension<Arc<template::TemplateManager<'a>>>,
+    Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
-    tm.render("index", &data)
+    tm.render("post", &data)
         .map(|s| Html(s))
         .map_err(Into::into)
 }
@@ -55,7 +57,8 @@ pub async fn index_api(data: Data) -> Result<Json<Data>, HttpError> {
 pub struct Data {
     site: SiteConfig,
     logged: bool,
-    posts: Vec<Posts>,
+    post: Posts,
+    comments: BTreeMap<u64, Comments>
 }
 
 #[async_trait::async_trait]
@@ -66,16 +69,21 @@ impl FromRequest for Data {
         req: &mut RequestParts<Body>,
     ) -> Result<Self, Self::Rejection> {
         let login_status = LoginStatus::from_request(req).await?;
+        let extract::Path(post_id) = extract::Path::<u64>::from_request(req).await?;
         let Extension(rb): Extension<Arc<Rbatis>> =
             Extension::<Arc<Rbatis>>::from_request(req)
                 .await
                 .server_error("`Rbatis` extension missing")?;
         let config_guard = config::get_config();
         let site = config_guard.site().clone();
+
+        let post = Posts::select(&rb, post_id).await?;
+
         Ok(Data {
             site,
             logged: matches!(login_status, LoginStatus::Logged),
-            posts: Posts::query_all(&rb).await?,
+            comments: post.query_comments(&rb).await?.into_iter().map(|comment| (comment.id, comment)).collect(),
+            post
         })
     }
 }

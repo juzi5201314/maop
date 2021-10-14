@@ -1,16 +1,15 @@
 #![feature(result_flattening)]
 #![feature(box_syntax)]
 
-use std::path::{Path, PathBuf};
-
+use crate::helpers::{newline_helper, nothing, render, truncate};
 use handlebars::Handlebars;
 use serde::Serialize;
 
 use crate::template_provider::{
-    EmbedTemplateProvider, LocalFilesProvider, Provider,
-    TemplateProvider,
+    EmbedTemplateProvider, LocalFilesProvider, TemplateProvider,
 };
 
+mod helpers;
 mod template_provider;
 
 pub struct TemplateManager<'reg> {
@@ -19,49 +18,45 @@ pub struct TemplateManager<'reg> {
 }
 
 impl<'reg> TemplateManager<'reg> {
-    pub fn new(path: Option<PathBuf>) -> Self {
-        TemplateManager {
-            hbs: {
-                let mut hbs = Handlebars::new();
-                hbs.set_strict_mode(true);
-                #[cfg(debug_assertions)]
-                hbs.set_dev_mode(true);
-                hbs
-            },
-            provider: match path {
-                None => TemplateProvider::new(EmbedTemplateProvider),
-                Some(path) => {
-                    TemplateProvider::new(LocalFilesProvider(path))
-                }
-            },
-        }
-    }
+    pub fn new() -> Result<Self, error::Error> {
+        let config_guard = config::get_config();
+        let config = config_guard.render();
+        let mut hbs = Handlebars::new();
+        hbs.set_strict_mode(*config.strict_mode());
+        hbs.set_dev_mode(*config.dev_mode());
+        hbs.register_escape_fn(str::to_owned);
+        hbs.register_helper("newline", box newline_helper);
+        hbs.register_helper("pass", box nothing);
+        hbs.register_helper("render", box render);
+        hbs.register_helper("truncate", box truncate);
 
-    pub fn load(&mut self) -> anyhow::Result<()> {
-        for (data, name) in &self.provider.get_all() {
-            self.hbs.register_template_string(
-                name,
-                std::str::from_utf8(data).unwrap(),
-            )?;
-        }
-
-        Ok(())
+        let provider = if let Some(path) = config.template() {
+            TemplateProvider::new(LocalFilesProvider(path.clone()))
+        } else {
+            TemplateProvider::new(EmbedTemplateProvider)
+        };
+        provider.load_all(&mut hbs)?;
+        Ok(TemplateManager { hbs, provider })
     }
 
     pub fn render<S, D>(
         &self,
         name: S,
         data: &D,
-    ) -> Result<String, handlebars::RenderError>
+    ) -> Result<String, error::Error>
     where
         S: AsRef<str>,
         D: Serialize,
     {
-        self.hbs.render(name.as_ref(), data)
+        self.hbs.render(name.as_ref(), data).map_err(Into::into)
     }
 
     pub fn hbs(&self) -> &Handlebars<'reg> {
         &self.hbs
+    }
+
+    pub fn provider(&self) -> &TemplateProvider {
+        &self.provider
     }
 }
 
@@ -69,8 +64,6 @@ impl<'reg> TemplateManager<'reg> {
 struct A;
 #[tokio::test]
 async fn render_test() {
-    let mut tg = TemplateManager::new(None);
-    tg.load().unwrap();
+    let mut tg = TemplateManager::new().unwrap();
     dbg!(tg.hbs.get_templates());
-    dbg!(tg.render("index", &A));
 }
