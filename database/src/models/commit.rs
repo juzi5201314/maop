@@ -35,6 +35,21 @@ pub struct Commits {
 
     /// 回复的评论id
     pub parent_id: Option<u64>,
+
+    /// 已经删除(对用户而言)
+    #[serde(serialize_with = "serialize")]
+    #[serde(deserialize_with = "deserialize")]
+    pub deleted: bool,
+}
+
+use serde::{Deserialize, Deserializer, Serializer};
+
+fn serialize<S>(val: &bool, ser: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    ser.serialize_u8(*val as u8)
+}
+
+fn deserialize<'de, D>(der: D) -> Result<bool, D::Error> where D: Deserializer<'de> {
+    Ok(u8::deserialize(der)? != 0)
 }
 
 impl Commits {
@@ -43,18 +58,47 @@ impl Commits {
         rb.fetch_list().await.map_err(Into::into)
     }
 
-    #[inline]
-    pub async fn remove_by_id(
+    /// 只是把评论替换为`该评论已删除`.
+    /// 并没有删除该评论
+    pub async fn soft_delete(
         rb: &Rbatis,
         id: u64,
     ) -> Result<(), Error> {
-        rb.remove_by_column::<Self, _>("id", &id).await?;
+        rb.update_by_wrapper::<Self>(
+            &Commits {
+                id,
+                post_id: 0,
+                parent_id: Option::None,
+                create_time: NaiveDateTime::now(),
+                content: CompactStr::default(),
+                email: CompactStr::default(),
+                nickname: CompactStr::default(),
+                deleted: true,
+            },
+            &rb.new_wrapper().eq("id", id),
+            &[
+                Skip::Column("id"),
+                Skip::Column("post_id"),
+                Skip::Column("create_time"),
+                Skip::Column("parent_id"),
+                Skip::Column("content"),
+                Skip::Column("email"),
+                Skip::Column("nickname"),
+            ],
+        )
+        .await?;
         Ok(())
     }
 
-    #[inline]
-    pub async fn remove(self, rb: &Rbatis) -> Result<(), Error> {
-        Self::remove_by_id(rb, self.id).await?;
+    /// 删除评论并且删除全部回复该评论的评论
+    pub async fn hard_delete(
+        rb: &Rbatis,
+        id: u64,
+    ) -> Result<(), Error> {
+        rb.remove_by_wrapper::<Self>(
+            &rb.new_wrapper().eq("id", id).or().eq("parent_id", id),
+        )
+        .await?;
         Ok(())
     }
 
@@ -86,6 +130,7 @@ impl Commits {
                     email: new_commit.email.into(),
                     nickname: new_commit.nickname.into(),
                     parent_id: reply_to,
+                    deleted: false,
                 },
                 &[Skip::Column("id")],
             )
@@ -113,7 +158,14 @@ impl Commits {
     }
 
     #[inline]
-    pub async fn query_replies(&self, rb: &Rbatis) -> Result<Vec<Self>, Error> {
-        rb.fetch_list_by_wrapper(&rb.new_wrapper().eq("parent_id", self.id)).await.map_err(Into::into)
+    pub async fn query_replies(
+        &self,
+        rb: &Rbatis,
+    ) -> Result<Vec<Self>, Error> {
+        rb.fetch_list_by_wrapper(
+            &rb.new_wrapper().eq("parent_id", self.id),
+        )
+        .await
+        .map_err(Into::into)
     }
 }
