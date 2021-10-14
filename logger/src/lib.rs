@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::fs::create_dir_all;
 use std::ops::Deref;
-use std::time::Duration;
 
 use chrono::{DateTime, Local, NaiveDate, SecondsFormat};
 use colored::{ColoredString, Colorize};
@@ -35,7 +34,7 @@ impl log::Log for Logger {
         if let Some(lvl) =
             config.filter().get(record.metadata().target())
         {
-            if *lvl > record.metadata().level() {
+            if *lvl < record.metadata().level() {
                 return;
             }
         }
@@ -233,5 +232,5 @@ async fn log_test() {
     log::warn!("fbi");
     log::error!("!!!!");
     tracing::info!("tracing~");
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 }
