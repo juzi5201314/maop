@@ -3,6 +3,7 @@ pub use simple_i18n::{i18n, lang};
 pub mod ser_de;
 pub mod unit;
 pub mod password_hash;
+pub mod markdown;
 
 #[macro_export]
 macro_rules! builder {
