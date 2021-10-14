@@ -32,5 +32,11 @@ dev_mode = false
 level = "INFO"
 
 [log.filter]
-# config = "info"
-# sqlx = "warning"
+"sqlx::query" = "INFO"
+
+# fuck rbatis
+polling = "WARN"
+async_io = "WARN"
+"polling::wepoll" = "WARN"
+"async_io::driver" = "WARN"
+"async_io::reactor" = "WARN"
