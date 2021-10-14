@@ -35,8 +35,4 @@ level = "INFO"
 "sqlx::query" = "INFO"
 
 # fuck rbatis
-polling = "WARN"
-async_io = "WARN"
-"polling::wepoll" = "WARN"
-"async_io::driver" = "WARN"
-"async_io::reactor" = "WARN"
+"rbatis::plugin::log" = "WARN"
