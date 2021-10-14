@@ -29,13 +29,8 @@ strict_mode = true
 dev_mode = false
 
 [log]
-# Every time it is output to stdout, it will be flushed.
-# Turning on this option can prevent the log messages of the console from being confused
-# (that is, multiple messages are written to stdout at the same time).
-# But in the case of too many log messages, it will seriously slow down the log processing speed.
-flush_stdout_every_time = true
-full_module_path = false
+level = "INFO"
 
 [log.filter]
-# rocket = "warning"
+# config = "info"
 # sqlx = "warning"

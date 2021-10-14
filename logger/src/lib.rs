@@ -1,25 +1,19 @@
 use std::borrow::Cow;
+use std::fs::create_dir_all;
 use std::ops::Deref;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::time::Duration;
 
-use anyhow::Context;
-use async_trait::async_trait;
-use chrono::Local;
-use fast_async_mutex::mutex::Mutex;
-use flume::{unbounded, Receiver, Sender};
-use futures::StreamExt;
-use log::Metadata;
+use chrono::{DateTime, Local, NaiveDate, SecondsFormat};
+use colored::{ColoredString, Colorize};
+use compact_str::CompactStr;
+use crossfire::mpsc;
+use crossfire::mpsc::SharedSenderBRecvF;
+use log::Level;
 use once_cell::sync::Lazy;
-use tokio::task::JoinHandle;
+use tokio::fs::{File, OpenOptions};
+use tokio::io::{stdout, AsyncWriteExt, Stdout};
 
-pub use crate::level::Level;
-pub use crate::macros::*;
-
-pub mod default_processors;
-mod level;
-mod macros;
+use config::get_config;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
@@ -29,248 +23,212 @@ pub fn init() {
 }
 
 impl log::Log for Logger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        LOGGER.check_level(metadata.level().into())
+    #[inline]
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
+        true
     }
 
     fn log(&self, record: &log::Record) {
-        let crate_name = record
-            .module_path_static()
-            .unwrap_or_default()
-            .split_once(':')
-            .map(|(name, _)| name)
-            .unwrap_or_else(|| "Unknown");
-        self.log(Record {
-            content: record.args().to_string(),
-            level: Level::from(record.metadata().level()),
-            module_path: record
-                .module_path_static()
-                .unwrap_or_default(),
-            file: Cow::Borrowed(
-                record.file_static().unwrap_or_default(),
-            ),
+        let config_guard = config::get_config();
+        let config = config_guard.log();
+
+        if let Some(lvl) =
+            config.filter().get(record.metadata().target())
+        {
+            if *lvl > record.metadata().level() {
+                return;
+            }
+        }
+
+        let record = Record {
+            metadata: Metadata {
+                level: record.metadata().level(),
+                target: CompactStr::from(record.metadata().target()),
+            },
+            content: {
+                if let Some(s) = record.args().as_str() {
+                    Cow::Borrowed(s)
+                } else {
+                    Cow::Owned(record.args().to_string())
+                }
+            },
+            file: CompactStr::from(record.file().unwrap_or_default()),
             line: record.line().unwrap_or_default(),
-            time: chrono::Local::now(),
-            crate_name,
-        })
+            time: Local::now(),
+        };
+        self.sender.send(record).expect("failed to send log.");
     }
 
+    #[inline]
     fn flush(&self) {}
 }
 
-#[inline]
-pub fn _log(
-    lvl: Level,
-    content: String,
-    module_path: &'static str,
-    file: Cow<'static, str>,
-    line: u32,
-    crate_name: &'static str,
-) {
-    LOGGER.log(Record {
-        content,
-        level: lvl,
-        module_path,
-        file,
-        line,
-        time: Local::now(),
-        crate_name,
-    })
-}
-
 struct Logger {
-    level: Level,
-    processors: Mutex<
-        Vec<
-            Box<
-                dyn Processor<Output = anyhow::Result<()>>
-                    + Send
-                    + Sync,
-            >,
-        >,
-    >,
-
-    task_processors_status: AtomicBool,
-    task_processors_handler: Option<JoinHandle<()>>,
-    sender: Sender<Arc<Record>>,
+    sender: mpsc::TxBlocking<Record, SharedSenderBRecvF>,
 }
 
 impl Logger {
-    pub fn new(level: Level, sender: Sender<Arc<Record>>) -> Self {
-        let logger = Logger {
-            level,
-            processors: Mutex::new(
-                default_processors::default_processors(),
-            ),
-            task_processors_status: AtomicBool::new(false),
-            task_processors_handler: None,
-            sender,
-        };
-        logger
+    pub fn new() -> Self {
+        let (tx, rx) = mpsc::bounded_tx_blocking_rx_future(1024);
+        Logger::start(rx);
+        Logger { sender: tx }
     }
 
-    fn start(mut self, rx: Receiver<Arc<Record>>) -> Self {
-        self.log(Record {
-            content: utils::i18n!("start_msg.logger").to_owned(),
-            level: Level::Info,
-            ..Default::default()
-        });
-        self.task_processors_handler =
-            Some(Logger::spawn_task_processors(rx));
-        self
-    }
-
-    #[inline]
-    fn check_level(&self, lvl: Level) -> bool {
-        self.level <= lvl
-    }
-
-    #[inline]
-    fn log(&self, mut record: Record) {
-        let conf = config::get_config();
-        if let Some(level) =
-            conf.log().filter().get(record.crate_name)
-        {
-            if let Ok(lvl) = Level::from_str(level) {
-                if record.level < lvl {
-                    return;
-                }
-            }
-        }
-        if self.check_level(record.level) {
-            self.sender
-                .send(Arc::new(record))
-                .map_err(|_| {
-                    println!(
-                        "{}",
-                        utils::i18n!("errors.logger.send_failure")
-                    )
-                })
-                .unwrap();
-        }
-    }
-
-    fn spawn_task_processors(
-        mut rx: Receiver<Arc<Record>>,
-    ) -> JoinHandle<()> {
-        tokio::task::spawn(async move {
-            if !LOGGER.task_processors_status.load(Ordering::SeqCst) {
-                LOGGER
-                    .task_processors_status
-                    .store(true, Ordering::SeqCst);
-                while Self::process(&mut rx).await {}
-                LOGGER
-                    .task_processors_status
-                    .store(false, Ordering::SeqCst);
-            } else {
-                panic!("Duplicate spawn_task_processors!")
-            }
-        })
-    }
-
-    async fn process(rx: &mut Receiver<Arc<Record>>) -> bool {
-        if let Ok(record) = rx.recv_async().await {
-            let mut lock = LOGGER.processors.lock().await;
-            let mut futures = lock
-                .iter_mut()
-                .map(|ps| ps.process(Arc::clone(&record)))
-                .collect::<futures::stream::FuturesUnordered<_>>();
+    fn start(rx: mpsc::RxFuture<Record, SharedSenderBRecvF>) {
+        tokio::spawn(async move {
+            let mut context = Context {
+                stdout: stdout(),
+                file: None,
+            };
             loop {
-                match futures.next().await {
-                    Some(Err(err)) => println!(
-                        "{}: {}",
-                        utils::i18n!("errors.logger.processor_error"),
-                        err
-                    ),
-                    Some(Ok(_)) => {}
-                    None => break,
+                let res = rx
+                    .recv()
+                    .await
+                    .unwrap()
+                    .record(&mut context)
+                    .await;
+                match res {
+                    Err(err) => eprintln!("record error: {:?}", err),
+                    _ => {}
                 }
             }
-            true
-        } else {
-            LOGGER
-                .task_processors_status
-                .store(false, Ordering::SeqCst);
-            panic!("recv err")
-        }
+        });
     }
 }
 
 impl Default for Logger {
     fn default() -> Self {
-        let (tx, rx) = unbounded();
-        Logger::new(
-            std::env::var("LOG")
-                .map(|s| {
-                    Level::from_str(&s)
-                        .map_err(|_| {
-                            anyhow::anyhow!(
-                                "{}: {}",
-                                utils::i18n!(
-                                    "errors.logger.nonexistent_level"
-                                ),
-                                s
-                            )
-                        })
-                        .unwrap()
-                })
-                .unwrap_or_else(|_| {
-                    if cfg!(debug_assertions) {
-                        Level::Debug
-                    } else {
-                        Level::Info
-                    }
-                }),
-            tx,
-        )
-        .start(rx)
+        Logger::new()
     }
 }
 
-impl Drop for Logger {
-    fn drop(&mut self) {
-        self.task_processors_handler
-            .iter_mut()
-            .for_each(|h| h.abort());
-    }
+struct Context {
+    stdout: Stdout,
+    file: Option<(NaiveDate, File)>,
 }
 
-#[async_trait]
-pub trait Processor {
-    type Output;
-
-    async fn process(&mut self, record: Arc<Record>) -> Self::Output;
-}
-
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct Record {
-    content: String,
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    serde::Serialize,
+)]
+pub struct Metadata {
     level: Level,
-    module_path: &'static str,
-    file: Cow<'static, str>,
-    line: u32,
-    time: chrono::DateTime<Local>,
-    crate_name: &'static str,
+    target: CompactStr,
 }
 
-impl Default for Record {
-    fn default() -> Self {
-        Record {
-            content: String::new(),
-            level: Level::Debug,
-            module_path: module_path!(),
-            file: ::std::borrow::Cow::Borrowed(file!()),
-            line: line!(),
-            time: chrono::Local::now(),
-            crate_name: crate___name::crate_name!(),
+impl Metadata {
+    #[inline]
+    pub fn level(&self) -> Level {
+        self.level
+    }
+
+    #[inline]
+    pub fn target(&self) -> &CompactStr {
+        &self.target
+    }
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+struct Record {
+    metadata: Metadata,
+    content: Cow<'static, str>,
+    file: CompactStr,
+    line: u32,
+    time: DateTime<Local>,
+}
+
+impl Record {
+    async fn record(self, cxt: &mut Context) -> std::io::Result<()> {
+        let (r1, r2) = tokio::join!(
+            self.record_to_stdout(&mut cxt.stdout),
+            self.record_to_file(&mut cxt.file)
+        );
+
+        r1.or(r2)
+    }
+
+    async fn record_to_stdout(
+        &self,
+        stdout: &mut Stdout,
+    ) -> std::io::Result<()> {
+        #[inline]
+        fn level_color(lvl: Level) -> ColoredString {
+            (match lvl {
+                Level::Trace => Colorize::purple,
+                Level::Debug => Colorize::green,
+                Level::Info => Colorize::blue,
+                Level::Warn => Colorize::yellow,
+                Level::Error => Colorize::red,
+            })(lvl.as_str())
         }
+
+        let format = format!(
+            "{time} [{lvl}]({target}) {content}\n",
+            time = self
+                .time
+                .to_rfc3339_opts(SecondsFormat::Secs, true)
+                .black()
+                .on_bright_white(),
+            lvl = level_color(self.metadata.level),
+            target = self.metadata.target.bold(),
+            content = self.content
+        );
+        stdout.write_all(format.as_bytes()).await?;
+        //stdout.flush().await?;
+        Ok(())
+    }
+
+    async fn record_to_file(
+        &self,
+        data: &mut Option<(NaiveDate, File)>,
+    ) -> std::io::Result<()> {
+        #[inline]
+        async fn new_file(date: NaiveDate) -> std::io::Result<File> {
+            let path = get_config().data_path().join("log");
+            let filename = format!("{}.log", date.to_string());
+
+            create_dir_all(&path)?;
+
+            OpenOptions::new()
+                .write(true)
+                .append(true)
+                .create(true)
+                .open(path.join(filename))
+                .await
+        }
+
+        let now = Local::now().date().naive_local();
+
+        if data.as_ref().map(|(date, _)| now > *date).unwrap_or(true)
+        {
+            *data = Some((now, new_file(now).await?))
+        }
+
+        let file = &mut data.as_mut().unwrap().1;
+
+        let mut data = Vec::with_capacity(100);
+        serde_json::to_writer(&mut data, self).unwrap();
+        data.push(b'\n');
+
+        file.write_all(&data).await?;
+        // todo: 定时保存
+        //file.sync_data().await?;
+
+        Ok(())
     }
 }
 
 #[tokio::test]
 async fn log_test() {
+    init();
     for i in 0..10 {
-        debug!(i);
+        log::debug!("{}", i);
     }
-    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+    tokio::time::sleep(Duration::from_millis(500)).await;
 }

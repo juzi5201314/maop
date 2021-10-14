@@ -15,7 +15,7 @@ anyhow = "1.0"
 sled = "0.34"
 bincode = "1.3.3"
 argon2 = "0.3"
-rand_core = "0.6"
+rand_core = { version = "0.6", features = ["std"] }
 log = "0.4"
 once_cell = "1.8.0"
 compact_str = { version = "0.1", features = ["serde"] }
