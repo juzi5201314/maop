@@ -227,8 +227,11 @@ impl Record {
 #[tokio::test]
 async fn log_test() {
     init();
-    for i in 0..10 {
-        log::debug!("{}", i);
-    }
+    log::trace!("hello");
+    log::debug!("world");
+    log::info!("{}", 1 + 1);
+    log::warn!("fbi");
+    log::error!("!!!!");
+    tracing::info!("tracing~");
     tokio::time::sleep(Duration::from_millis(500)).await;
 }
