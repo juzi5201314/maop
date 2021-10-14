@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use axum::handler::get;
 use axum::{AddExtensionLayer, Router};
+use cfg_if::cfg_if;
 
 use ::error::Error;
 use template::TemplateManager;
@@ -50,24 +51,20 @@ pub async fn run_http_server() -> Result<(), Error> {
         ));
 
     match config.r#type() {
-        config::ListenType::Udp => {
-            #[cfg(target_os = "unix")]
-                {
-                    use hyperlocal::UnixServerExt;
-                    let server = hyper::Server::bind_unix(config.bind())?
-                        .serve(axum_app.into_make_service());
-                    log::info!("listen on unix://{}", config.bind());
-
-                    let graceful = server.with_graceful_shutdown(async {
-                        tokio::signal::ctrl_c().await.unwrap();
-                    });
-                    graceful.await
-                }
-            #[cfg(not(target_os = "unix"))]
-                {
-                    panic!("Unsupported. You cannot use unix sockets on non-Unix systems.")
-                }
-        }
+        config::ListenType::Udp => {cfg_if! {
+            if #[cfg(target_os = "unix")] {
+                use hyperlocal::UnixServerExt;
+                let server = hyper::Server::bind_unix(config.bind())?
+                    .serve(axum_app.into_make_service());
+                log::info!("listen on unix://{}", config.bind());
+                let graceful = server.with_graceful_shutdown(async {
+                    tokio::signal::ctrl_c().await.unwrap();
+                });
+                graceful.await
+            } else {
+                panic!("Unsupported. You cannot use unix sockets on non-Unix systems.")
+            }
+        }},
         config::ListenType::Http => {
             let addr = SocketAddr::new(
                 IpAddr::from_str(config.bind())?,
