@@ -1,4 +1,3 @@
-use std::time::Duration;
 use tokio::runtime::Builder;
 
 #[cfg(feature = "prof")]
@@ -24,7 +23,7 @@ pub fn run(configs: Vec<String>) {
     }
 
     if let Some(bytes) = config.thread_stack_size() {
-        builder.thread_stack_size(bytes.get_bytes().to_usize().unwrap_or(usize::MAX));
+        builder.thread_stack_size(bytes.get_bytes() as usize);
     }
 
     if let Some(time) = config.blocking_thread_keep_alive() {

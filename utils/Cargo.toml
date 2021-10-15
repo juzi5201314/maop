@@ -10,7 +10,7 @@ edition = "2018"
 simple-i18n = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
-byte-unit = "4.0.12"
+byte-unit = { version = "4.0", default-features = false }
 anyhow = "1.0"
 argon2 = "0.3"
 rand_core = { version = "0.6", features = ["std"] }
