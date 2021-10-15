@@ -45,6 +45,11 @@ pub fn get_config_cache(
     Cache::new(Arc::clone(&CONFIG.get().unwrap().inner))
 }
 
+pub fn hook(hook: Box<dyn Fn() + Send + Sync + 'static>) {
+    CONFIG.get().unwrap().refresh_hooks.lock().push(hook)
+}
+
+/// 不要在config::init之前调用任何上方的方法, 否则会陷入死递归
 pub fn init(paths: Vec<CompactStr>) -> anyhow::Result<()> {
     CONFIG.set(Config::new(paths)?).ok();
     Ok(())
@@ -53,6 +58,7 @@ pub fn init(paths: Vec<CompactStr>) -> anyhow::Result<()> {
 struct Config {
     raw: Mutex<config_rs::Config>,
     inner: Arc<ArcSwap<MaopConfig>>,
+    refresh_hooks: Mutex<Vec<Box<dyn Fn() + Send + Sync + 'static>>>,
     _watcher: OnceCell<RecommendedWatcher>,
 }
 
@@ -90,6 +96,7 @@ impl Config {
             inner: Arc::new(ArcSwap::from_pointee(maop_config)),
             raw: Mutex::new(c),
             _watcher: OnceCell::new(),
+            refresh_hooks: Mutex::new(Vec::new())
         };
 
         config.create_data_dir()?;
@@ -101,9 +108,16 @@ impl Config {
     fn refresh(&self) -> anyhow::Result<()> {
         let mut config = self.raw.lock();
         config.refresh()?;
+
         let maop_config = config.clone().try_into::<MaopConfig>()?;
         self.inner.store(Arc::new(maop_config));
         self.create_data_dir()?;
+
+        let hooks = self.refresh_hooks.lock();
+        hooks.iter().for_each(|hook| {
+            hook()
+        });
+
         Ok(())
     }
 
