@@ -19,7 +19,7 @@ pub struct TemplateManager<'reg> {
 
 impl<'reg> TemplateManager<'reg> {
     pub fn new() -> Result<Self, error::Error> {
-        let config_guard = config::get_config();
+        let config_guard = config::get_config_temp();
         let config = config_guard.render();
         let mut hbs = Handlebars::new();
         hbs.set_strict_mode(*config.strict_mode());

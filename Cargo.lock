@@ -1472,6 +1472,7 @@ name = "http"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arc-swap",
  "async-session",
  "async-trait",
  "axum",
@@ -1486,6 +1487,7 @@ dependencies = [
  "hyperlocal",
  "log",
  "logger",
+ "once_cell",
  "rbatis",
  "rocksdb",
  "serde 1.0.130",

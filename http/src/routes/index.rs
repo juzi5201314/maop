@@ -11,19 +11,20 @@ use rbatis::rbatis::Rbatis;
 use config::SiteConfig;
 use database::models::post::Posts;
 
-use crate::login_status::LoginStatus;
 use crate::error::HttpError;
 use crate::error::HttpServerError;
+use crate::login_status::LoginStatus;
 
 pub fn routes() -> Router<BoxRoute> {
-    let index = match config::get_config().render().default_render() {
-        config::RenderStrategy::SSR => {
-            Router::new().route("/", get(index_ssr)).boxed()
-        }
-        config::RenderStrategy::CSR => {
-            Router::new().route("/", get(index_csr)).boxed()
-        }
-    };
+    let index =
+        match config::get_config_temp().render().default_render() {
+            config::RenderStrategy::SSR => {
+                Router::new().route("/", get(index_ssr)).boxed()
+            }
+            config::RenderStrategy::CSR => {
+                Router::new().route("/", get(index_csr)).boxed()
+            }
+        };
 
     let router = index
         .route("/api", get(index_api))
@@ -70,8 +71,7 @@ impl FromRequest for Data {
             Extension::<Arc<Rbatis>>::from_request(req)
                 .await
                 .server_error("`Rbatis` extension missing")?;
-        let config_guard = config::get_config();
-        let site = config_guard.site().clone();
+        let site = config::get_config_temp().site().clone();
         Ok(Data {
             site,
             logged: matches!(login_status, LoginStatus::Logged),

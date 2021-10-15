@@ -23,7 +23,7 @@ use crate::session_store::SessionStore;
 pub type Password = Option<String>;
 
 pub fn routes() -> Router<BoxRoute> {
-    let index = match config::get_config().render().default_render() {
+    let index = match config::get_config_temp().render().default_render() {
         config::RenderStrategy::SSR => Router::new()
             .route("/", post(login).get(index_ssr))
             .boxed(),
@@ -72,8 +72,7 @@ impl FromRequest for Data {
         req: &mut RequestParts<Body>,
     ) -> Result<Self, Self::Rejection> {
         let login_status = LoginStatus::from_request(req).await?;
-        let config_guard = config::get_config();
-        let site = config_guard.site().clone();
+        let site = config::get_config_temp().site().clone();
 
         Ok(Data {
             site,
@@ -102,8 +101,7 @@ pub async fn login(
                 .insert("login_status", LoginStatus::Logged)
                 .unwrap();
             session.expire_in({
-                let config_guard = config::get_config();
-                *config_guard.http().session_expiry().duration()
+                *config::get_config_temp().http().session_expiry().duration()
             });
             let cookie = store
                 .store_session(session.into())

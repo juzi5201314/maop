@@ -11,8 +11,7 @@ use log::Level;
 use once_cell::sync::Lazy;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{stdout, AsyncWriteExt, Stdout};
-
-use config::get_config;
+use config::get_config_temp;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
@@ -24,7 +23,7 @@ pub fn init() {
 impl log::Log for Logger {
     #[inline]
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        let config_guard = config::get_config();
+        let config_guard = config::get_config_temp();
         let config = config_guard.log();
 
         config
@@ -191,7 +190,7 @@ impl Record {
     ) -> std::io::Result<()> {
         #[inline]
         async fn new_file(date: NaiveDate) -> std::io::Result<File> {
-            let path = get_config().data_path().join("log");
+            let path = get_config_temp().data_path().join("log");
             let filename = format!("{}.log", date.to_string());
 
             create_dir_all(&path)?;

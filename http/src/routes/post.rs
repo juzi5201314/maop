@@ -18,7 +18,7 @@ use crate::error::HttpError;
 use crate::error::HttpServerError;
 
 pub fn routes() -> Router<BoxRoute> {
-    let index = match config::get_config().render().default_render() {
+    let index = match config::get_config_temp().render().default_render() {
         config::RenderStrategy::SSR => {
             Router::new().route("/", get(index_ssr)).boxed()
         }
@@ -74,8 +74,7 @@ impl FromRequest for Data {
             Extension::<Arc<Rbatis>>::from_request(req)
                 .await
                 .server_error("`Rbatis` extension missing")?;
-        let config_guard = config::get_config();
-        let site = config_guard.site().clone();
+        let site = config::get_config_temp().site().clone();
 
         let post = Posts::select(&rb, post_id).await?;
 

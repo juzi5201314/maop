@@ -7,18 +7,17 @@ use sqlx::sqlite::{
 };
 use sqlx::ConnectOptions;
 
-use config::MaopConfig;
 use error::Error;
 
-pub async fn new(m_config: &MaopConfig) -> Result<Rbatis, Error> {
-    let config = m_config.database();
+pub async fn new() -> Result<Rbatis, Error> {
+    let config = config::get_config_temp().database().clone();
     let rb = Rbatis::new();
     rb.link_cfg(
         &DBConnectOption {
             driver_type: DriverType::Sqlite,
             sqlite: Some({
                 let mut opt = SqliteConnectOptions::new()
-                    .filename(m_config.data_path().join("main.db"))
+                    .filename(config::get_config_temp().data_path().join("main.db"))
                     .journal_mode(SqliteJournalMode::Wal)
                     .synchronous(SqliteSynchronous::Normal)
                     .create_if_missing(true)

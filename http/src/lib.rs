@@ -24,8 +24,8 @@ mod session;
 mod session_store;
 
 pub async fn run_http_server() -> Result<(), Error> {
-    let conf_guard = config::get_config();
-    let config = conf_guard.http();
+    let full_config = config::get_config_full();
+    let config = full_config.http();
 
     let axum_app = Router::new()
         .nest("/", index::routes())
@@ -41,11 +41,11 @@ pub async fn run_http_server() -> Result<(), Error> {
             TemplateManager::new()?,
         )))
         .layer(AddExtensionLayer::new(Arc::new(
-            database::new(&conf_guard).await?,
+            database::new().await?,
         )))
         .layer(AddExtensionLayer::new(
             SessionStore::new(
-                conf_guard.data_path().clone().join("session.data"),
+                full_config.data_path().clone().join("session.data"),
             )
             .await?,
         ));
@@ -87,6 +87,7 @@ pub async fn run_http_server() -> Result<(), Error> {
 
 #[tokio::test]
 async fn test_http_server() {
+    config::init(vec![]).unwrap();
     logger::init();
     run_http_server().await.unwrap();
 }
