@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 use std::borrow::Cow;
 use std::fs::create_dir_all;
 use std::ops::Deref;
@@ -15,9 +17,17 @@ use config::get_config_temp;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
+/// 在这之前必须初始化config!!!
 pub fn init() {
-    log::set_max_level(log::LevelFilter::Trace);
+    set_max_level();
     log::set_logger(LOGGER.deref()).unwrap();
+
+    config::hook(box set_max_level);
+}
+
+#[inline]
+fn set_max_level() {
+    log::set_max_level(config::get_config_temp().log().level().to_level_filter())
 }
 
 impl log::Log for Logger {
@@ -226,6 +236,7 @@ impl Record {
 
 #[tokio::test]
 async fn log_test() {
+    config::init(vec![]).unwrap();
     init();
     log::trace!("hello");
     log::debug!("world");
