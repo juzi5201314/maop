@@ -5,7 +5,7 @@ use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 use std::time::Duration;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TimeUnit(Duration);
 
 impl TimeUnit {
@@ -27,36 +27,10 @@ impl fmt::Display for TimeUnit {
 }
 
 impl FromStr for TimeUnit {
-    type Err = String;
+    type Err = parse_duration::parse::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        macro_rules! err {
-            () => {
-                crate::i18n!("errors.unit.time_unit_format")
-                    .to_owned()
-            };
-        }
-        let chars = s.chars();
-        let unit = chars
-            .clone()
-            .filter_map(|c| c.is_ascii_alphabetic().then(|| c))
-            .collect::<String>();
-        let time = chars
-            .filter_map(|c| c.is_digit(10).then(|| c))
-            .collect::<String>()
-            .parse::<u64>()
-            .map_err(|_| err!())?;
-
-        Ok(TimeUnit(match unit.as_ref() {
-            "ns" => Duration::from_nanos(time),
-            "us" => Duration::from_micros(time),
-            "ms" => Duration::from_millis(time),
-            "s" => Duration::from_secs(time),
-            "m" => Duration::from_secs(time * 60),
-            "h" => Duration::from_secs(time * 60 * 60),
-            "d" => Duration::from_secs(time * 60 * 60 * 24),
-            _ => return Err(err!()),
-        }))
+        Ok(TimeUnit(parse_duration::parse(s)?))
     }
 }
 
