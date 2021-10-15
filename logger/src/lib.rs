@@ -27,7 +27,11 @@ impl log::Log for Logger {
         let config_guard = config::get_config();
         let config = config_guard.log();
 
-        config.filter().get(metadata.target()).map(|lvl| *lvl >= metadata.level()).unwrap_or(true)
+        config
+            .filter()
+            .get(metadata.target())
+            .map(|lvl| *lvl >= metadata.level())
+            .unwrap_or(true)
     }
 
     fn log(&self, record: &log::Record) {
@@ -35,7 +39,9 @@ impl log::Log for Logger {
             let record = Record {
                 metadata: Metadata {
                     level: record.metadata().level(),
-                    target: CompactStr::from(record.metadata().target()),
+                    target: CompactStr::from(
+                        record.metadata().target(),
+                    ),
                 },
                 content: {
                     if let Some(s) = record.args().as_str() {
@@ -44,7 +50,9 @@ impl log::Log for Logger {
                         Cow::Owned(record.args().to_string())
                     }
                 },
-                file: CompactStr::from(record.file().unwrap_or_default()),
+                file: CompactStr::from(
+                    record.file().unwrap_or_default(),
+                ),
                 line: record.line().unwrap_or_default(),
                 time: Local::now(),
             };
