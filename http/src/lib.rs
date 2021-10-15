@@ -51,7 +51,7 @@ pub async fn run_http_server() -> Result<(), Error> {
         ));
 
     match config.r#type() {
-        config::ListenType::Udp => {cfg_if! {
+        config::ListenType::Uds => {cfg_if! {
             if #[cfg(target_os = "unix")] {
                 use hyperlocal::UnixServerExt;
                 let server = hyper::Server::bind_unix(config.bind())?

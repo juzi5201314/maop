@@ -5,7 +5,7 @@ use utils::unit::time_unit::TimeUnit;
 #[serde(rename_all = "lowercase")]
 pub enum ListenType {
     Http,
-    Udp,
+    Uds,
 }
 
 crate::gen_config!(HttpConfig, {
