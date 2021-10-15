@@ -10,20 +10,40 @@ static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 
 pub fn run(configs: Vec<String>) {
     #[cfg(feature = "prof")] let guard = prof::start();
+    config::init(configs.into_iter().map(|s| s.into()).collect()).expect("config error");
+    logger::init();
 
-    let rt = Builder::new_multi_thread()
-        .enable_all()
+    let config = config::get_config_temp().runtime().clone();
+
+    let mut builder = Builder::new_multi_thread();
+
+    builder.enable_all();
+
+    if let Some(num) = config.worker_threads() {
+        builder.worker_threads(*num);
+    }
+
+    if let Some(bytes) = config.thread_stack_size() {
+        builder.thread_stack_size(bytes.get_bytes().to_usize().unwrap_or(usize::MAX));
+    }
+
+    if let Some(time) = config.blocking_thread_keep_alive() {
+        builder.thread_keep_alive(*time.duration());
+    }
+
+    if let Some(num) = config.max_blocking_threads() {
+        builder.max_blocking_threads(*num);
+    }
+
+    let rt = builder
         .build()
         .unwrap();
 
     rt.block_on(async move {
-        config::init(configs.into_iter().map(|s| s.into()).collect()).expect("config error");
-        logger::init();
-
         http::run_http_server().await.expect("http server error");
     });
 
-    rt.shutdown_timeout(Duration::from_secs(10));
+    rt.shutdown_timeout(*config.shutdown_timeout().duration());
 
     #[cfg(feature = "prof")] prof::report(&guard);
 }

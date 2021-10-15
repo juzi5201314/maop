@@ -36,3 +36,7 @@ level = "INFO"
 
 # fuck rbatis
 "rbatis::plugin::log" = "WARN"
+
+# tokio runtime configuration
+[runtime]
+shutdown_timeout = "10s"

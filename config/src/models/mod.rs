@@ -5,5 +5,6 @@ utils::pub_mods!(
     log,
     http,
     render,
-    site
+    site,
+    runtime
 );

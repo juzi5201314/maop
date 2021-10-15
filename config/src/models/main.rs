@@ -10,7 +10,8 @@ crate::gen_config!(MaopConfig, {
     log: LogConfig,
     http: HttpConfig,
     render: RenderConfig,
-    site: SiteConfig
+    site: SiteConfig,
+    runtime: RuntimeConfig
 });
 
 #[inline]
