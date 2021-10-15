@@ -23,39 +23,33 @@ pub fn init() {
 
 impl log::Log for Logger {
     #[inline]
-    fn enabled(&self, _metadata: &log::Metadata) -> bool {
-        true
-    }
-
-    fn log(&self, record: &log::Record) {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
         let config_guard = config::get_config();
         let config = config_guard.log();
 
-        if let Some(lvl) =
-            config.filter().get(record.metadata().target())
-        {
-            if *lvl < record.metadata().level() {
-                return;
-            }
-        }
+        config.filter().get(metadata.target()).map(|lvl| *lvl >= metadata.level()).unwrap_or(true)
+    }
 
-        let record = Record {
-            metadata: Metadata {
-                level: record.metadata().level(),
-                target: CompactStr::from(record.metadata().target()),
-            },
-            content: {
-                if let Some(s) = record.args().as_str() {
-                    Cow::Borrowed(s)
-                } else {
-                    Cow::Owned(record.args().to_string())
-                }
-            },
-            file: CompactStr::from(record.file().unwrap_or_default()),
-            line: record.line().unwrap_or_default(),
-            time: Local::now(),
-        };
-        self.sender.send(record).expect("failed to send log.");
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            let record = Record {
+                metadata: Metadata {
+                    level: record.metadata().level(),
+                    target: CompactStr::from(record.metadata().target()),
+                },
+                content: {
+                    if let Some(s) = record.args().as_str() {
+                        Cow::Borrowed(s)
+                    } else {
+                        Cow::Owned(record.args().to_string())
+                    }
+                },
+                file: CompactStr::from(record.file().unwrap_or_default()),
+                line: record.line().unwrap_or_default(),
+                time: Local::now(),
+            };
+            self.sender.send(record).expect("failed to send log.");
+        }
     }
 
     #[inline]
