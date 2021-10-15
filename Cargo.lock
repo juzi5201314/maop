@@ -290,15 +290,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3410529e8288c463bedb5930f82833bc0c90e5d2fe639a56582a4d09220b281"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
 name = "atomic-waker"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -736,7 +727,6 @@ dependencies = [
  "once_cell",
  "pprof",
  "regex",
- "states",
  "tokio",
 ]
 
@@ -946,19 +936,6 @@ checksum = "e77a43b28d0668df09411cb0bc9a8c2adc40f9a048afe863e05fd43251e8e39c"
 dependencies = [
  "cfg-if 1.0.0",
  "num_cpus",
-]
-
-[[package]]
-name = "data_structure"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "config 0.1.0",
- "database",
- "serde 1.0.130",
- "sled",
- "utils",
 ]
 
 [[package]]
@@ -3233,14 +3210,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e113fb6f3de07a243d434a56ec6f186dfd51cb08448239fe7bcae73f87ff28ff"
 dependencies = [
  "version_check",
-]
-
-[[package]]
-name = "states"
-version = "0.1.0"
-dependencies = [
- "atomic",
- "once_cell",
 ]
 
 [[package]]
