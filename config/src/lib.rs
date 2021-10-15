@@ -49,7 +49,12 @@ pub fn hook(hook: Box<dyn Fn() + Send + Sync + 'static>) {
     CONFIG.get().unwrap().refresh_hooks.lock().push(hook)
 }
 
-/// 不要在config::init之前调用任何上方的方法, 否则会陷入死递归
+/// 不要在config::init之前调用任何上方的方法, 否则会panic
+/// 或者说在应用启动第一件事是初始化config
+/// 除非你知道自己在做什么, 否则不要在config::init之前调用其他crate的方法
+///
+/// 永远都应该在logger初始化之前初始化config.
+/// 因为logger依赖config, 如果在config初始化的时候打印log, 那么将会陷入死递归
 pub fn init(paths: Vec<CompactStr>) -> anyhow::Result<()> {
     CONFIG.set(Config::new(paths)?).ok();
     Ok(())
@@ -128,6 +133,7 @@ impl Config {
                     if event.kind.is_create()
                         || event.kind.is_modify()
                     {
+                        event.paths.into_iter().for_each(|path| _log::info!("reload {:?}", path));
                         if let Err(err) =
                             CONFIG.get().unwrap().refresh()
                         {
@@ -154,8 +160,10 @@ impl Config {
         let config = self.inner.load();
         let path = config.data_path();
         if !path.exists() {
-            std::fs::create_dir_all(&path)?;
+            std::fs::create_dir_all(path)?;
+            _log::debug!("create data dir: {:?}", path);
         } else if !path.is_dir() {
+            // 如果不能创建data path, 程序将无法继续运行下去, 所以在这里panic是合理的
             panic!("data path: `{:?}` no a dir", path);
         }
         Ok(())
