@@ -1,8 +1,15 @@
-#[cfg(feature = "snmalloc-rs")]
-#[global_allocator]
-static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
+use argh::FromArgs;
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    core::run().await.unwrap();
+#[derive(FromArgs)]
+/// Run maop
+pub struct Run {
+    #[argh(option, short = 'c')]
+    /// config files
+    conf: Vec<String>
+}
+
+fn main() {
+    let args = argh::from_env::<Run>();
+
+    core::run(args.conf);
 }

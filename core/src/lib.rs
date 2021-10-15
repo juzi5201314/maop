@@ -1,28 +1,29 @@
+use std::time::Duration;
+use tokio::runtime::Builder;
+
 #[cfg(feature = "prof")]
 mod prof;
 
-use once_cell::sync::Lazy;
+#[cfg(feature = "snmalloc")]
+#[global_allocator]
+static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 
-use config::CONFIG;
-use std::sync::Arc;
+pub fn run(configs: Vec<String>) {
+    #[cfg(feature = "prof")] let guard = prof::start();
 
-pub async fn init() {
-    Lazy::force(&CONFIG);
-}
+    let rt = Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
 
-pub async fn run() -> anyhow::Result<()> {
-    #[cfg(feature = "prof")]
-    let guard = prof::start();
+    rt.block_on(async move {
+        config::init(configs.into_iter().map(|s| s.into()).collect()).expect("config error");
+        logger::init();
 
-    logger::init();
+        http::run_http_server().await.expect("http server error");
+    });
 
-    let conf = config::get_config();
-    let db = Arc::new(database::new(conf.database()).await?);
+    rt.shutdown_timeout(Duration::from_secs(10));
 
-    http::generate_password_if_no_exists()?;
-    http::run_http_server(Arc::clone(&db)).await?;
-
-    #[cfg(feature = "prof")]
-    prof::report(&guard);
-    Ok(())
+    #[cfg(feature = "prof")] prof::report(&guard);
 }
