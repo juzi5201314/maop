@@ -10,3 +10,4 @@ edition = "2018"
 core = { path = "../core" }
 
 argh = "0.1.5"
+dotenv = "0.15"
