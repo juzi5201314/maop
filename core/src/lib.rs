@@ -10,7 +10,6 @@ static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 pub fn run(configs: Vec<String>) {
     #[cfg(feature = "prof")] let guard = prof::start();
     config::init(configs.into_iter().map(|s| s.into()).collect()).expect("config error");
-    logger::init();
 
     let config = config::get_config_temp().runtime().clone();
 
@@ -39,6 +38,8 @@ pub fn run(configs: Vec<String>) {
         .unwrap();
 
     rt.block_on(async move {
+        logger::init();
+
         http::run_http_server().await.expect("http server error");
     });
 
