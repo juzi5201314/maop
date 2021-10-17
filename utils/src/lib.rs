@@ -7,7 +7,7 @@ pub mod password_hash;
 pub mod unit;
 pub mod notify;
 
-pub static SHUTDOWN_NOTIFY: Lazy<Notify> = Lazy::new(|| Notify::new());
+pub static SHUTDOWN_NOTIFY: Lazy<Notify> = Lazy::new(Default::default);
 
 #[macro_export]
 macro_rules! builder {

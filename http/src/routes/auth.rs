@@ -41,12 +41,13 @@ pub fn routes() -> Router<BoxRoute> {
     router.boxed()
 }
 
+#[allow(clippy::needless_lifetimes)]
 async fn index_ssr<'reg>(
     data: Data,
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("auth", &data)
-        .map(|s| Html(s))
+        .map(Html)
         .map_err(Into::into)
 }
 

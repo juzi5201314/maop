@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer};
 
 static ARGON2: Lazy<Argon2> = Lazy::new(|| {
     Argon2::new(Algorithm::Argon2id, Version::V0x13, {
-        const ERROR_MSG: &'static str = "wrong argon2 params";
+        const ERROR_MSG: &str = "wrong argon2 params";
         let mut params = ParamsBuilder::new();
         params
             .m_cost(1024)
@@ -48,7 +48,7 @@ pub fn password_verify(
     password: &[u8],
     password_hash: &str,
 ) -> Result<bool, argon2::password_hash::Error> {
-    let parsed_hash = PasswordHash::new(&password_hash)?;
+    let parsed_hash = PasswordHash::new(password_hash)?;
 
     Ok(ARGON2.verify_password(password, &parsed_hash).is_ok())
 }

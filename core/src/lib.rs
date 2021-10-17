@@ -52,11 +52,12 @@ pub fn run(configs: Vec<String>) {
 
         log::info!("Shutting down...");
 
-        if let Err(_) = tokio::time::timeout(
+        if tokio::time::timeout(
             shutdown_timeout,
             SHUTDOWN_NOTIFY.notify(),
         )
         .await
+        .is_err()
         {
             eprintln!("shutdown timeout");
         }

@@ -34,12 +34,13 @@ pub fn routes() -> Router<BoxRoute> {
     router.boxed()
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub async fn index_ssr<'a>(
     data: Data,
     Extension(tm): Extension<Arc<template::TemplateManager<'a>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("index", &data)
-        .map(|s| Html(s))
+        .map(Html)
         .map_err(Into::into)
 }
 

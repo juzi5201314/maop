@@ -101,7 +101,7 @@ impl Logger {
                 futures::select_biased! {
                     _ = Logger::process(&mut context, &rx).fuse() => {},
                     resp = wait_handle.wait().fuse() => {
-                        while rx.len() > 0 {
+                        while !rx.is_empty() {
                             Logger::process(&mut context, &rx).await;
                         }
 
@@ -118,9 +118,8 @@ impl Logger {
         rx: &mpsc::RxFuture<Record, SharedSenderBRecvF>,
     ) {
         let res = rx.recv().await.unwrap().record(ctx).await;
-        match res {
-            Err(err) => eprintln!("record error: {:?}", err),
-            _ => {}
+        if let Err(err) = res {
+            eprintln!("record error: {:?}", err)
         }
     }
 }

@@ -160,11 +160,11 @@ impl Config {
         let config = self.inner.load();
         let path = config.data_path();
         if !path.exists() {
+            // 如果不能创建data path, 程序将无法继续运行下去, 所以在这里panic是合理的
+            assert!(path.is_dir(), "data path: `{:?}` no a dir", path);
+
             std::fs::create_dir_all(path)?;
             _log::debug!("create data dir: {:?}", path);
-        } else if !path.is_dir() {
-            // 如果不能创建data path, 程序将无法继续运行下去, 所以在这里panic是合理的
-            panic!("data path: `{:?}` no a dir", path);
         }
         Ok(())
     }

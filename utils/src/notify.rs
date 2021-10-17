@@ -1,4 +1,4 @@
-use crossfire::mpsc::{TxUnbounded, unbounded_future, RxUnbounded};
+use crossfire::mpsc::{unbounded_future, RxUnbounded, TxUnbounded};
 use tokio::sync::Mutex;
 
 pub struct Notify {
@@ -8,13 +8,15 @@ pub struct Notify {
 impl Notify {
     pub fn new() -> Self {
         Notify {
-            targets: Mutex::new(Vec::new())
+            targets: Mutex::new(Vec::new()),
         }
     }
 
     pub async fn notify(&self) {
         let mut targets = self.targets.lock().await;
-        targets.sort_by(|t1, t2| t1.priority.cmp(&t2.priority).reverse());
+        targets.sort_by(|t1, t2| {
+            t1.priority.cmp(&t2.priority).reverse()
+        });
 
         for target in targets.iter() {
             target.tx.send(()).ok();
@@ -28,12 +30,15 @@ impl Notify {
         self.targets.lock().await.push(Target {
             priority,
             tx,
-            rx: rx2
+            rx: rx2,
         });
-        WaitHandle {
-            tx: tx2,
-            rx
-        }
+        WaitHandle { tx: tx2, rx }
+    }
+}
+
+impl Default for Notify {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

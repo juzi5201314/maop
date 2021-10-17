@@ -81,7 +81,7 @@ async fn update_post(
         post_id,
         NewPost {
             title: data.title,
-            content: utils::markdown::render(&data.content).map_err(|err| error::Error::Io(err))?,
+            content: utils::markdown::render(&data.content).map_err(error::Error::Io)?,
         },
     )
     .await?;
@@ -97,7 +97,7 @@ async fn new_post(
         &*rb,
         NewPost {
             title: data.title,
-            content: utils::markdown::render(&data.content).map_err(|err| error::Error::Io(err))?,
+            content: utils::markdown::render(&data.content).map_err(error::Error::Io)?,
         },
     )
     .await?;
@@ -113,13 +113,14 @@ async fn delete_post(
     Ok(Json(PostRes { id: post_id }))
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub async fn index_ssr_new_post<'reg>(
     _: Logged,
     data: NewPostData,
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("edit", &data)
-        .map(|s| Html(s))
+        .map(Html)
         .map_err(Into::into)
 }
 
@@ -153,13 +154,14 @@ impl FromRequest for NewPostData {
     }
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub async fn index_ssr_edit_post<'reg>(
     _: Logged,
     data: EditPostData,
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("edit", &data)
-        .map(|s| Html(s))
+        .map(Html)
         .map_err(Into::into)
 }
 
@@ -234,7 +236,7 @@ async fn new_comment(
         &*rb,
         data.post_id,
         NewComment {
-            content: utils::markdown::render_safe(&data.content).map_err(|err| error::Error::Io(err))?,
+            content: utils::markdown::render_safe(&data.content).map_err(error::Error::Io)?,
             nickname: data.nickname,
             email: data.email,
         },
