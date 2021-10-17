@@ -5,15 +5,16 @@ pub mod models;
 
 #[cfg(test)]
 mod test {
+    use rbatis::rbatis::Rbatis;
+
     use crate::db;
     use crate::models::comment::{Comments, NewComment};
     use crate::models::post::{NewPost, Posts};
-    use rbatis::rbatis::Rbatis;
 
     #[tokio::test]
     async fn comment_curd_test() {
         let conf = config::get_config_full();
-        let rb: Rbatis = db::new(&conf).await.unwrap();
+        let rb: Rbatis = db::new().await.unwrap();
 
         let post: Posts = Posts::insert(
             &rb,
@@ -69,7 +70,7 @@ mod test {
     #[tokio::test]
     async fn post_curd_test() {
         let conf = config::get_config_full();
-        let rb: Rbatis = db::new(&conf).await.unwrap();
+        let rb: Rbatis = db::new().await.unwrap();
 
         // insert
         let mut post: Posts = Posts::insert(

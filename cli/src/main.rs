@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+
 use argh::FromArgs;
 
 #[derive(FromArgs)]
@@ -10,13 +11,13 @@ pub struct Run {
 
     #[argh(option, short = 'e')]
     /// environment variable file
-    env: Option<PathBuf>
+    env: Option<PathBuf>,
 }
 
 fn main() {
     let args = argh::from_env::<Run>();
 
-    if let Some(env) = args.env{
+    if let Some(env) = args.env {
         dotenv::from_path(env).unwrap()
     }
 

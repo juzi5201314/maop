@@ -101,7 +101,7 @@ impl Config {
             inner: Arc::new(ArcSwap::from_pointee(maop_config)),
             raw: Mutex::new(c),
             _watcher: OnceCell::new(),
-            refresh_hooks: Mutex::new(Vec::new())
+            refresh_hooks: Mutex::new(Vec::new()),
         };
 
         config.create_data_dir()?;
@@ -119,9 +119,7 @@ impl Config {
         self.create_data_dir()?;
 
         let hooks = self.refresh_hooks.lock();
-        hooks.iter().for_each(|hook| {
-            hook()
-        });
+        hooks.iter().for_each(|hook| hook());
 
         Ok(())
     }
@@ -133,7 +131,9 @@ impl Config {
                     if event.kind.is_create()
                         || event.kind.is_modify()
                     {
-                        event.paths.into_iter().for_each(|path| _log::info!("reload {:?}", path));
+                        event.paths.into_iter().for_each(|path| {
+                            _log::info!("reload {:?}", path)
+                        });
                         if let Err(err) =
                             CONFIG.get().unwrap().refresh()
                         {
@@ -161,7 +161,11 @@ impl Config {
         let path = config.data_path();
         if !path.exists() {
             // 如果不能创建data path, 程序将无法继续运行下去, 所以在这里panic是合理的
-            assert!(path.is_dir(), "data path: `{:?}` no a dir", path);
+            assert!(
+                path.is_dir(),
+                "data path: `{:?}` no a dir",
+                path
+            );
 
             std::fs::create_dir_all(path)?;
             _log::debug!("create data dir: {:?}", path);

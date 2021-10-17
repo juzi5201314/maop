@@ -17,7 +17,11 @@ pub async fn new() -> Result<Rbatis, Error> {
             driver_type: DriverType::Sqlite,
             sqlite: Some({
                 let mut opt = SqliteConnectOptions::new()
-                    .filename(config::get_config_temp().data_path().join("main.db"))
+                    .filename(
+                        config::get_config_temp()
+                            .data_path()
+                            .join("main.db"),
+                    )
                     .journal_mode(SqliteJournalMode::Wal)
                     .synchronous(SqliteSynchronous::Normal)
                     .create_if_missing(true)

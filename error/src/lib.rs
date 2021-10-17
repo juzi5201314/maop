@@ -24,5 +24,5 @@ pub enum Error {
     Render(#[from] handlebars::RenderError),
 
     #[error("rocksdb error: {0}")]
-    Rocksdb(#[from] rocksdb::Error)
+    Rocksdb(#[from] rocksdb::Error),
 }
