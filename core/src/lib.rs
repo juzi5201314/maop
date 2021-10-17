@@ -1,5 +1,7 @@
 use tokio::runtime::Builder;
 
+use utils::SHUTDOWN_NOTIFY;
+
 #[cfg(feature = "prof")]
 mod prof;
 
@@ -8,8 +10,10 @@ mod prof;
 static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 
 pub fn run(configs: Vec<String>) {
-    #[cfg(feature = "prof")] let guard = prof::start();
-    config::init(configs.into_iter().map(|s| s.into()).collect()).expect("config error");
+    #[cfg(feature = "prof")]
+    let guard = prof::start();
+    config::init(configs.into_iter().map(|s| s.into()).collect())
+        .expect("config error");
 
     let config = config::get_config_temp().runtime().clone();
 
@@ -33,17 +37,33 @@ pub fn run(configs: Vec<String>) {
         builder.max_blocking_threads(*num);
     }
 
-    let rt = builder
-        .build()
-        .unwrap();
+    let rt = builder.build().unwrap();
+
+    let shutdown_timeout = *config.shutdown_timeout().duration();
 
     rt.block_on(async move {
         logger::init();
 
-        http::run_http_server().await.expect("http server error");
+        tokio::spawn(async {
+            http::run_http_server().await.expect("http server error");
+        });
+
+        tokio::signal::ctrl_c().await.unwrap();
+
+        log::info!("Shutting down...");
+
+        if let Err(_) = tokio::time::timeout(
+            shutdown_timeout,
+            SHUTDOWN_NOTIFY.notify(),
+        )
+        .await
+        {
+            eprintln!("shutdown timeout");
+        }
     });
 
-    rt.shutdown_timeout(*config.shutdown_timeout().duration());
+    rt.shutdown_timeout(shutdown_timeout);
 
-    #[cfg(feature = "prof")] prof::report(&guard);
+    #[cfg(feature = "prof")]
+    prof::report(&guard);
 }

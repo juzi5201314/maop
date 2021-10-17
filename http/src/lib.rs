@@ -11,6 +11,7 @@ use cfg_if::cfg_if;
 
 use ::error::Error;
 use template::TemplateManager;
+use utils::SHUTDOWN_NOTIFY;
 
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};
@@ -58,7 +59,9 @@ pub async fn run_http_server() -> Result<(), Error> {
                     .serve(axum_app.into_make_service());
                 log::info!("listen on unix://{}", config.bind());
                 let graceful = server.with_graceful_shutdown(async {
-                    tokio::signal::ctrl_c().await.unwrap();
+                    let resp = SHUTDOWN_NOTIFY.register(5).await.wait().await;
+                    log::debug!("http server shutdown");
+                    resp.ready()
                 });
                 graceful.await
             } else {
@@ -76,8 +79,10 @@ pub async fn run_http_server() -> Result<(), Error> {
             log::info!("listen on http://{}", server.local_addr());
 
             let graceful = server.with_graceful_shutdown(async {
-                    tokio::signal::ctrl_c().await.unwrap();
-                });
+                let resp = SHUTDOWN_NOTIFY.register(5).await.wait().await;
+                log::debug!("http server shutdown");
+                resp.ready()
+            });
             graceful.await
         }
     }.unwrap();

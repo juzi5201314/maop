@@ -751,11 +751,13 @@ dependencies = [
  "anyhow",
  "config 0.1.0",
  "http 0.1.0",
+ "log",
  "logger",
  "pprof",
  "regex",
  "snmalloc-rs",
  "tokio",
+ "utils",
 ]
 
 [[package]]
@@ -1885,6 +1887,7 @@ dependencies = [
  "compact_str",
  "config 0.1.0",
  "crossfire",
+ "futures",
  "log",
  "once_cell",
  "serde 1.0.130",
@@ -3795,6 +3798,7 @@ dependencies = [
  "byte-unit",
  "chrono",
  "compact_str",
+ "crossfire",
  "htmlescape",
  "log",
  "once_cell",
@@ -3803,6 +3807,7 @@ dependencies = [
  "rand_core",
  "serde 1.0.130",
  "simple-i18n",
+ "tokio",
 ]
 
 [[package]]

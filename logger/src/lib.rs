@@ -9,11 +9,14 @@ use colored::{ColoredString, Colorize};
 use compact_str::CompactStr;
 use crossfire::mpsc;
 use crossfire::mpsc::SharedSenderBRecvF;
+use futures::FutureExt;
 use log::Level;
 use once_cell::sync::Lazy;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{stdout, AsyncWriteExt, Stdout};
+
 use config::get_config_temp;
+use utils::SHUTDOWN_NOTIFY;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
@@ -27,7 +30,9 @@ pub fn init() {
 
 #[inline]
 fn set_max_level() {
-    log::set_max_level(config::get_config_temp().log().level().to_level_filter())
+    log::set_max_level(
+        config::get_config_temp().log().level().to_level_filter(),
+    )
 }
 
 impl log::Log for Logger {
@@ -90,19 +95,33 @@ impl Logger {
                 stdout: stdout(),
                 file: None,
             };
+            let wait_handle = SHUTDOWN_NOTIFY.register(1).await;
+
             loop {
-                let res = rx
-                    .recv()
-                    .await
-                    .unwrap()
-                    .record(&mut context)
-                    .await;
-                match res {
-                    Err(err) => eprintln!("record error: {:?}", err),
-                    _ => {}
-                }
+                futures::select_biased! {
+                    _ = Logger::process(&mut context, &rx).fuse() => {},
+                    resp = wait_handle.wait().fuse() => {
+                        while rx.len() > 0 {
+                            Logger::process(&mut context, &rx).await;
+                        }
+
+                        resp.ready();
+                        break
+                    },
+                };
             }
         });
+    }
+
+    async fn process(
+        ctx: &mut Context,
+        rx: &mpsc::RxFuture<Record, SharedSenderBRecvF>,
+    ) {
+        let res = rx.recv().await.unwrap().record(ctx).await;
+        match res {
+            Err(err) => eprintln!("record error: {:?}", err),
+            _ => {}
+        }
     }
 }
 
@@ -190,7 +209,7 @@ impl Record {
             content = self.content
         );
         stdout.write_all(format.as_bytes()).await?;
-        //stdout.flush().await?;
+        stdout.flush().await?;
         Ok(())
     }
 

@@ -20,3 +20,5 @@ compact_str = { version = "0.1", features = ["serde"] }
 pulldown-cmark = { version = "0.8", default-features = false, features = ["simd"] }
 htmlescape = "0.3.1"
 parse_duration = "2.1.1"
+crossfire = "0.1.7"
+tokio = { version = "1", features = ["sync", "parking_lot"] }
