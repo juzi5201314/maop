@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 core = { path = "../core" }
+config = { path = "../config" }
+http = { path = "../http" }
 
 argh = "0.1.5"
 dotenv = "0.15"

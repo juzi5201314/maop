@@ -9,7 +9,7 @@ mod prof;
 #[global_allocator]
 static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 
-pub fn run(configs: Vec<String>) {
+pub fn run(configs: Vec<String>, no_password: bool) {
     #[cfg(feature = "prof")]
     let guard = prof::start();
     config::init(configs.into_iter().map(|s| s.into()).collect())
@@ -44,8 +44,13 @@ pub fn run(configs: Vec<String>) {
     rt.block_on(async move {
         logger::init();
 
-        tokio::spawn(async {
-            http::run_http_server().await.expect("http server error");
+        tokio::spawn(async move {
+            if no_password {
+                log::warn!("you are running in no-password mode");
+            }
+            http::run_http_server(no_password)
+                .await
+                .expect("http server error");
         });
 
         tokio::signal::ctrl_c().await.unwrap();

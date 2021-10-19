@@ -12,8 +12,5 @@ crate::gen_config!(HttpConfig, {
     bind: CompactStr,
     port: u16,
     r#type: ListenType,
-    #[serde(default)]
-    #[serde(deserialize_with = "utils::password_hash::password_hash")]
-    password: Option<String>,
     session_expiry: TimeUnit
 });

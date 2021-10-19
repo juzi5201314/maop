@@ -29,6 +29,7 @@ rocksdb = { version = "0.17", default-features = false, features = ["snappy"], o
 cfg-if = "1.0.0"
 arc-swap = "1.3.0"
 once_cell = "1.8.0"
+inquire = "0.2"
 
 axum = { version = "0.2", features = ["headers"] }
 hyper = { version = "0.14", features = ["full"] }

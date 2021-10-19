@@ -1,15 +1,20 @@
 #![feature(decl_macro)]
 #![feature(never_type)]
 
+use std::fs::{read_to_string, OpenOptions};
+use std::io::Write;
 use std::net::{IpAddr, SocketAddr};
+use std::path::Path;
+use std::process::exit;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::handler::get;
 use axum::{AddExtensionLayer, Router};
 use cfg_if::cfg_if;
+use inquire::error::InquireError;
+use inquire::PasswordDisplayMode;
 
-use ::error::Error;
 use template::TemplateManager;
 use utils::SHUTDOWN_NOTIFY;
 
@@ -24,9 +29,17 @@ mod routes;
 mod session;
 mod session_store;
 
-pub async fn run_http_server() -> Result<(), Error> {
+pub async fn run_http_server(
+    no_password: bool,
+) -> anyhow::Result<()> {
     let full_config = config::get_config_full();
     let config = full_config.http();
+
+    let password = if no_password {
+        require_password(full_config.data_path())?
+    } else {
+        None
+    };
 
     let axum_app = Router::new()
         .nest("/", index::routes())
@@ -35,9 +48,7 @@ pub async fn run_http_server() -> Result<(), Error> {
         .nest("/edit", edit::routes_post())
         .nest("/edit/comment", edit::routes_comment())
         .nest("/auth", auth::routes())
-        .layer(AddExtensionLayer::new(Arc::new(
-            config.password().clone() as Password,
-        )))
+        .layer(AddExtensionLayer::new(Arc::new(password)))
         .layer(AddExtensionLayer::new(Arc::new(
             TemplateManager::new()?,
         )))
@@ -90,9 +101,61 @@ pub async fn run_http_server() -> Result<(), Error> {
     Ok(())
 }
 
+pub const PASSWORD_FILE_NAME: &str = ".password";
+
+fn require_password(data_path: &Path) -> anyhow::Result<Password> {
+    let pwd_path = data_path.join(PASSWORD_FILE_NAME);
+    Ok(if pwd_path.exists() {
+        Some(read_to_string(pwd_path)?)
+    } else {
+        request_password_from_input(&pwd_path)?
+    })
+}
+
+pub fn set_password(
+    pwd_path: &Path,
+    password: String,
+) -> anyhow::Result<Password> {
+    let pwd = utils::password_hash::password_hash(password)?;
+    let mut file = OpenOptions::new()
+        .truncate(true)
+        .create(true)
+        .write(true)
+        .open(pwd_path)?;
+    file.write_all(pwd.as_bytes())?;
+    file.sync_all()?;
+    Ok(Some(pwd))
+}
+
+fn request_password_from_input(
+    pwd_path: &Path,
+) -> anyhow::Result<Password> {
+    loop {
+        let res = inquire::Password::new("enter your password:")
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .prompt();
+
+        match res {
+            Ok(pwd) => {
+                if pwd.is_empty() {
+                    println!("the password cannot be empty");
+                    continue;
+                }
+
+                break Ok(set_password(pwd_path, pwd)?);
+            }
+            Err(err) => match err {
+                InquireError::OperationCanceled => continue,
+                InquireError::OperationInterrupted => exit(0),
+                other => break Err(other.into()),
+            },
+        }
+    }
+}
+
 #[tokio::test]
 async fn test_http_server() {
     config::init(vec![]).unwrap();
     logger::init();
-    run_http_server().await.unwrap();
+    run_http_server(false).await.unwrap();
 }
