@@ -7,7 +7,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-error = { path = "../error" }
 config = { path = "../config" }
 
 handlebars = { version = "4.0", features = ["script_helper"] }

@@ -81,7 +81,7 @@ async fn update_post(
         post_id,
         NewPost {
             title: data.title,
-            content: utils::markdown::render(&data.content).map_err(error::Error::Io)?,
+            content: utils::markdown::render(&data.content)?,
         },
     )
     .await?;
@@ -97,7 +97,7 @@ async fn new_post(
         &*rb,
         NewPost {
             title: data.title,
-            content: utils::markdown::render(&data.content).map_err(error::Error::Io)?,
+            content: utils::markdown::render(&data.content)?,
         },
     )
     .await?;
@@ -236,7 +236,7 @@ async fn new_comment(
         &*rb,
         data.post_id,
         NewComment {
-            content: utils::markdown::render_safe(&data.content).map_err(error::Error::Io)?,
+            content: utils::markdown::render_safe(&data.content)?,
             nickname: data.nickname,
             email: data.email,
         },

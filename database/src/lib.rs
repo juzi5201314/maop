@@ -1,3 +1,6 @@
+#![feature(try_blocks)]
+#![feature(type_ascription)]
+
 pub use crate::db::new;
 
 mod db;

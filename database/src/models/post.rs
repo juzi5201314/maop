@@ -6,8 +6,6 @@ use rbatis::crud::{Skip, CRUD};
 use rbatis::crud_table;
 use rbatis::rbatis::Rbatis;
 
-use error::Error;
-
 use crate::models::comment::{Comments, NewComment};
 
 #[derive(Default, Clone)]
@@ -33,7 +31,7 @@ pub struct Posts {
 
 impl Posts {
     #[inline]
-    pub async fn query_all(rb: &Rbatis) -> Result<Vec<Self>, Error> {
+    pub async fn query_all(rb: &Rbatis) -> anyhow::Result<Vec<Self>> {
         rb.fetch_list().await.map_err(Into::into)
     }
 
@@ -41,26 +39,26 @@ impl Posts {
     pub async fn remove_by_id(
         rb: &Rbatis,
         id: u64,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         rb.remove_by_column::<Self, _>("id", &id).await?;
         Ok(())
     }
 
     #[inline]
-    pub async fn remove(self, rb: &Rbatis) -> Result<(), Error> {
+    pub async fn remove(self, rb: &Rbatis) -> anyhow::Result<()> {
         Self::remove_by_id(rb, self.id).await?;
         Ok(())
     }
 
     #[inline]
-    pub async fn select(rb: &Rbatis, id: u64) -> Result<Self, Error> {
+    pub async fn select(rb: &Rbatis, id: u64) -> anyhow::Result<Self> {
         rb.fetch_by_column("id", &id).await.map_err(Into::into)
     }
 
     pub async fn insert<S1, S2>(
         rb: &Rbatis,
         new_post: NewPost<S1, S2>,
-    ) -> Result<Self, Error>
+    ) -> anyhow::Result<Self>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
@@ -92,7 +90,7 @@ impl Posts {
         rb: &Rbatis,
         id: u64,
         new_post: NewPost<S1, S2>,
-    ) -> Result<NaiveDateTime, Error>
+    ) -> anyhow::Result<NaiveDateTime>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
@@ -124,7 +122,7 @@ impl Posts {
         rb: &Rbatis,
         id: u64,
         new_post: NewPost<S1, S2>,
-    ) -> Result<(), Error>
+    ) -> anyhow::Result<()>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
@@ -143,7 +141,7 @@ impl Posts {
         rb: &Rbatis,
         new_comment: NewComment<S1, S2, S3>,
         reply_to: Option<u64>,
-    ) -> Result<Comments, Error>
+    ) -> anyhow::Result<Comments>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
@@ -156,7 +154,7 @@ impl Posts {
     pub async fn query_comments(
         &self,
         rb: &Rbatis,
-    ) -> Result<Vec<Comments>, Error> {
+    ) -> anyhow::Result<Vec<Comments>> {
         rb.fetch_list_by_wrapper(
             rb.new_wrapper().eq("post_id", self.id),
         )
