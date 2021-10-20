@@ -1,13 +1,13 @@
 use std::collections::HashMap;
-use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::fs::{create_dir, remove_dir_all, remove_file};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_session::{Session, SessionStore as AsyncSessionStore};
 use compact_str::CompactStr;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 #[cfg(not(feature = "session_store_rocksdb"))]
 pub type SessionStore = FileStore;
@@ -16,9 +16,8 @@ pub type SessionStore = rocksdb::RocksdbStore;
 
 #[derive(Debug, Clone)]
 pub struct FileStore {
-    inner: Arc<RwLock<HashMap<CompactStr, Session>>>,
-    file: Arc<Mutex<File>>,
-    loaded: Arc<AtomicBool>,
+    cache: Arc<RwLock<HashMap<CompactStr, Session>>>,
+    path: PathBuf,
 }
 
 impl FileStore {
@@ -27,30 +26,39 @@ impl FileStore {
     where
         P: AsRef<Path>,
     {
+        create_dir(path.as_ref())?;
         Ok(FileStore {
-            inner: Arc::new(RwLock::new(HashMap::new())),
-            file: Arc::new(Mutex::new(
-                OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .read(true)
-                    .truncate(true)
-                    .open(path)
-                    .await?,
-            )),
-            loaded: Arc::new(AtomicBool::new(false)),
+            cache: Arc::new(RwLock::new(HashMap::new())),
+            path: path.as_ref().to_path_buf(),
         })
     }
 
-    async fn store(
-        &self,
-        data: &HashMap<CompactStr, Session>,
-    ) -> anyhow::Result<()> {
-        let mut file = self.file.lock().await;
-        file.set_len(0).await?;
-        file.write_all(&bincode::serialize(data)?).await?;
+    async fn store(&self, session: &Session) -> anyhow::Result<()> {
+        let mut file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(self.path.join(session.id()))
+            .await?;
+        file.write_all(&bincode::serialize(session)?).await?;
         file.sync_data().await?;
         Ok(())
+    }
+
+    async fn load(
+        &self,
+        session_id: &str,
+    ) -> anyhow::Result<Option<Session>> {
+        let path = self.path.join(session_id);
+        Ok(if path.exists() {
+            let mut file: File =
+                OpenOptions::new().read(true).open(path).await?;
+            let mut data = Vec::with_capacity(200);
+            file.read_to_end(&mut data).await?;
+            bincode::deserialize(&*data)?
+        } else {
+            None
+        })
     }
 }
 
@@ -60,32 +68,23 @@ impl AsyncSessionStore for FileStore {
         &self,
         cookie_value: String,
     ) -> async_session::Result<Option<Session>> {
-        if !self.loaded.swap(true, Ordering::SeqCst) {
-            let mut data = Vec::with_capacity(128);
-            self.file.lock().await.read_to_end(&mut data).await?;
-            *self.inner.write().await = bincode::deserialize(&data)?;
-        }
         let id = Session::id_from_cookie_value(&cookie_value)?;
-        Ok(self
-            .inner
-            .read()
-            .await
-            .get(&*id)
-            .cloned()
-            .and_then(Session::validate))
+        Ok(if let Some(session) = self.cache.read().await.get(&*id) {
+            Some(session.clone())
+        } else {
+            self.load(&id).await?.and_then(Session::validate)
+        })
     }
 
     async fn store_session(
         &self,
         session: Session,
     ) -> async_session::Result<Option<String>> {
-        let id: CompactStr = session.id().into();
-        let mut inner = self.inner.write().await;
-
-        inner.insert(id, session.clone());
-
-        self.store(&*inner).await?;
-
+        self.store(&session).await?;
+        self.cache
+            .write()
+            .await
+            .insert(session.id().into(), session.clone());
         // session.reset_data_changed();
         Ok(session.into_cookie_value())
     }
@@ -94,16 +93,15 @@ impl AsyncSessionStore for FileStore {
         &self,
         session: Session,
     ) -> async_session::Result {
-        let mut inner = self.inner.write().await;
-        inner.remove(session.id());
-        self.store(&*inner).await?;
+        self.cache.write().await.remove(session.id());
+        remove_file(self.path.join(session.id()))?;
         Ok(())
     }
 
     async fn clear_store(&self) -> async_session::Result {
-        let mut inner = self.inner.write().await;
-        inner.clear();
-        self.store(&*inner).await?;
+        self.cache.write().await.clear();
+        remove_dir_all(&self.path)
+            .and_then(|_| create_dir(&self.path))?;
         Ok(())
     }
 }

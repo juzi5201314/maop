@@ -38,5 +38,5 @@ tower = "0.4"
 hyperlocal = "0.8"
 
 [features]
-default = ["session_store_rocksdb"]
+default = []
 session_store_rocksdb = ["rocksdb"]
