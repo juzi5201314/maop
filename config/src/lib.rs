@@ -97,6 +97,8 @@ impl Config {
 
         let maop_config = c.clone().try_into::<MaopConfig>()?;
 
+        Config::create_data_dir(maop_config.data_path())?;
+
         let config = Config {
             inner: Arc::new(ArcSwap::from_pointee(maop_config)),
             raw: Mutex::new(c),
@@ -104,7 +106,6 @@ impl Config {
             refresh_hooks: Mutex::new(Vec::new()),
         };
 
-        config.create_data_dir()?;
         config.watch(paths)?;
 
         Ok(config)
@@ -115,8 +116,10 @@ impl Config {
         config.refresh()?;
 
         let maop_config = config.clone().try_into::<MaopConfig>()?;
+
+        Config::create_data_dir(maop_config.data_path())?;
+
         self.inner.store(Arc::new(maop_config));
-        self.create_data_dir()?;
 
         let hooks = self.refresh_hooks.lock();
         hooks.iter().for_each(|hook| hook());
@@ -156,19 +159,17 @@ impl Config {
         Ok(())
     }
 
-    fn create_data_dir(&self) -> std::io::Result<()> {
-        let config = self.inner.load();
-        let path = config.data_path();
-        if !path.exists() {
+    fn create_data_dir(data_path: &Path) -> std::io::Result<()> {
+        if !data_path.exists() {
             // 如果不能创建data path, 程序将无法继续运行下去, 所以在这里panic是合理的
             assert!(
-                path.is_dir(),
+                data_path.is_dir(),
                 "data path: `{:?}` no a dir",
-                path
+                data_path
             );
 
-            std::fs::create_dir_all(path)?;
-            _log::debug!("create data dir: {:?}", path);
+            std::fs::create_dir_all(data_path)?;
+            _log::debug!("create data dir: {:?}", data_path);
         }
         Ok(())
     }

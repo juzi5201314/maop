@@ -8,8 +8,6 @@ use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
 use walkdir::WalkDir;
 
-use error::Error;
-
 #[derive(rust_embed::RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/small"]
 pub struct EmbedTemplateProvider;
@@ -21,12 +19,12 @@ pub trait Provider {
     fn load_all<'reg>(
         &self,
         hbs: &mut Handlebars<'reg>,
-    ) -> Result<(), error::Error>;
+    ) -> anyhow::Result<()>;
 
     async fn get(
         &self,
         path: &str,
-    ) -> Result<Option<Cow<'static, [u8]>>, Error>;
+    ) -> anyhow::Result<Option<Cow<'static, [u8]>>>;
 }
 
 #[async_trait::async_trait]
@@ -34,7 +32,7 @@ impl Provider for EmbedTemplateProvider {
     fn load_all<'reg>(
         &self,
         hbs: &mut Handlebars<'reg>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         Self::iter().try_for_each(|path| {
             let file_name = Path::new(&*path)
                 .file_name()
@@ -56,7 +54,7 @@ impl Provider for EmbedTemplateProvider {
     async fn get(
         &self,
         path: &str,
-    ) -> Result<Option<Cow<'static, [u8]>>, Error> {
+    ) -> anyhow::Result<Option<Cow<'static, [u8]>>> {
         Ok(Self::get(path).map(|file| file.data))
     }
 }
@@ -66,7 +64,7 @@ impl Provider for LocalFilesProvider {
     fn load_all<'reg>(
         &self,
         hbs: &mut Handlebars<'reg>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         WalkDir::new(&self.0)
             .follow_links(true)
             .into_iter()
@@ -87,7 +85,7 @@ impl Provider for LocalFilesProvider {
     async fn get(
         &self,
         path: &str,
-    ) -> Result<Option<Cow<'static, [u8]>>, Error> {
+    ) -> anyhow::Result<Option<Cow<'static, [u8]>>> {
         let path = self.0.join(path);
         let file = OpenOptions::new().read(true).open(path).await;
         match file {

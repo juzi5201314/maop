@@ -1,10 +1,11 @@
 #![feature(result_flattening)]
 #![feature(box_syntax)]
 
-use crate::helpers::{newline_helper, nothing, render, truncate};
+use anyhow::Context;
 use handlebars::Handlebars;
 use serde::Serialize;
 
+use crate::helpers::{newline_helper, nothing, render, truncate};
 use crate::template_provider::{
     EmbedTemplateProvider, LocalFilesProvider, TemplateProvider,
 };
@@ -18,7 +19,7 @@ pub struct TemplateManager<'reg> {
 }
 
 impl<'reg> TemplateManager<'reg> {
-    pub fn new() -> Result<Self, error::Error> {
+    pub fn new() -> anyhow::Result<Self> {
         let config_guard = config::get_config_temp();
         let config = config_guard.render();
         let mut hbs = Handlebars::new();
@@ -35,7 +36,9 @@ impl<'reg> TemplateManager<'reg> {
         } else {
             TemplateProvider::new(EmbedTemplateProvider)
         };
-        provider.load_all(&mut hbs)?;
+        provider
+            .load_all(&mut hbs)
+            .context("load template provider")?;
         Ok(TemplateManager { hbs, provider })
     }
 
@@ -43,12 +46,14 @@ impl<'reg> TemplateManager<'reg> {
         &self,
         name: S,
         data: &D,
-    ) -> Result<String, error::Error>
+    ) -> anyhow::Result<String>
     where
         S: AsRef<str>,
         D: Serialize,
     {
-        self.hbs.render(name.as_ref(), data).map_err(Into::into)
+        self.hbs
+            .render(name.as_ref(), data)
+            .context("render template")
     }
 
     pub fn hbs(&self) -> &Handlebars<'reg> {

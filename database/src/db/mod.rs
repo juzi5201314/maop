@@ -1,3 +1,4 @@
+use anyhow::Context;
 use rbatis::core::db::{DBConnectOption, DBPoolOptions};
 use rbatis::executor::Executor;
 use rbatis::rbatis::Rbatis;
@@ -7,9 +8,7 @@ use sqlx::sqlite::{
 };
 use sqlx::ConnectOptions;
 
-use error::Error;
-
-pub async fn new() -> Result<Rbatis, Error> {
+pub async fn new() -> anyhow::Result<Rbatis> {
     let config = config::get_config_temp().database().clone();
     let rb = Rbatis::new();
     rb.link_cfg(
@@ -48,10 +47,15 @@ pub async fn new() -> Result<Rbatis, Error> {
             test_before_acquire: true,
         },
     )
-    .await?;
-    rb.exec(include_str!("../sqls/create_posts.sql"), vec![])
-        .await?;
-    rb.exec(include_str!("../sqls/create_comments.sql"), vec![])
-        .await?;
+    .await
+    .context("link database")?;
+    (try {
+        rb.exec(include_str!("../sqls/create_posts.sql"), vec![])
+            .await?;
+        rb.exec(include_str!("../sqls/create_comments.sql"), vec![])
+            .await?;
+    }: anyhow::Result<()>)
+        .context("create table")?;
+
     Ok(rb)
 }

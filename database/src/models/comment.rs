@@ -6,8 +6,6 @@ use rbatis::crud::{Skip, CRUD};
 use rbatis::crud_table;
 use rbatis::rbatis::Rbatis;
 
-use error::Error;
-
 #[derive(Default, Clone)]
 pub struct NewComment<S1, S2, S3>
 where
@@ -54,7 +52,7 @@ fn deserialize<'de, D>(der: D) -> Result<bool, D::Error> where D: Deserializer<'
 
 impl Comments {
     #[inline]
-    pub async fn query_all(rb: &Rbatis) -> Result<Vec<Self>, Error> {
+    pub async fn query_all(rb: &Rbatis) -> anyhow::Result<Vec<Self>> {
         rb.fetch_list().await.map_err(Into::into)
     }
 
@@ -63,7 +61,7 @@ impl Comments {
     pub async fn soft_delete(
         rb: &Rbatis,
         id: u64,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         rb.update_by_wrapper::<Self>(
             &Comments {
                 id,
@@ -94,7 +92,7 @@ impl Comments {
     pub async fn hard_delete(
         rb: &Rbatis,
         id: u64,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         rb.remove_by_wrapper::<Self>(
             rb.new_wrapper().eq("id", id).or().eq("parent_id", id),
         )
@@ -103,7 +101,7 @@ impl Comments {
     }
 
     #[inline]
-    pub async fn select(rb: &Rbatis, id: u64) -> Result<Self, Error> {
+    pub async fn select(rb: &Rbatis, id: u64) -> anyhow::Result<Self> {
         rb.fetch_by_column("id", &id).await.map_err(Into::into)
     }
 
@@ -112,7 +110,7 @@ impl Comments {
         post_id: u64,
         new_comment: NewComment<S1, S2, S3>,
         reply_to: Option<u64>,
-    ) -> Result<Self, Error>
+    ) -> anyhow::Result<Self>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
@@ -147,7 +145,7 @@ impl Comments {
         &self,
         rb: &Rbatis,
         new_comment: NewComment<S1, S2, S3>,
-    ) -> Result<Self, Error>
+    ) -> anyhow::Result<Self>
     where
         S1: Into<CompactStr> + Clone,
         S2: Into<CompactStr> + Clone,
@@ -161,7 +159,7 @@ impl Comments {
     pub async fn query_replies(
         &self,
         rb: &Rbatis,
-    ) -> Result<Vec<Self>, Error> {
+    ) -> anyhow::Result<Vec<Self>> {
         rb.fetch_list_by_wrapper(
             rb.new_wrapper().eq("parent_id", self.id),
         )

@@ -8,8 +8,6 @@ use axum::http::Response;
 use axum::response::IntoResponse;
 use hyper::StatusCode;
 
-use error::Error;
-
 pub struct HttpError {
     code: StatusCode,
     msg: Cow<'static, str>,
@@ -42,8 +40,8 @@ impl IntoResponse for HttpError {
     }
 }
 
-impl From<error::Error> for HttpError {
-    fn from(err: Error) -> Self {
+impl From<anyhow::Error> for HttpError {
+    fn from(err: anyhow::Error) -> Self {
         HttpError {
             code: StatusCode::INTERNAL_SERVER_ERROR,
             msg: err.to_string().into(),
