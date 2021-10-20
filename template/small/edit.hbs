@@ -1,0 +1,115 @@
+{{#*inline "title"}}
+    {{#if post}}
+        edit - {{post.title}}
+    {{else}}
+        New Post
+    {{/if}}
+
+{{/inline}}
+
+{{#*inline "other_headers"}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@12.2.0/dist/markdown-it.min.js"></script>
+{{/inline}}
+
+{{#*inline "body"}}
+    <label>
+        Title:
+        <input value="{{#if post}}{{post.title}}{{/if}}" id="title"/>
+    </label>
+    <br/>
+    <label>
+        Content:
+        <textarea>{{#if post}}{{post.content}}{{/if}}</textarea>
+        <br/>
+        <button id="update">edit</button>
+        {{#if post}}
+            <button id="delete-post" value="{{post.id}}">delete</button>{{/if}}
+        <br/>
+        <h2>Comments: </h2>
+        {{#if post}}
+            {{#each comments as |comment|}}
+                <blockquote id="comment-{{comment.id}}">
+                    <p>{{comment.nickname}} <{{comment.email}}>:</p>
+                    <p>{{comment.content}}</p>
+
+                    {{#if comment.deleted}}
+                        <button id="delete-comment-{{comment.id}}" disabled>deleted</button>
+                    {{else}}
+                        <button id="delete-comment-{{comment.id}}">delete</button>
+                    {{/if}}
+                    <button id="hard-delete-comment-{{comment.id}}">hard delete</button>
+                </blockquote>
+                <script>
+                    window.document.getElementById("delete-comment-{{comment.id}}").addEventListener("click", () => {
+                        _delete("/edit/comment/{{comment.id}}").then(response => {
+                            if (response.ok) {
+                                window.document.getElementById("comment-{{comment.id}}").remove();
+                            } else {
+                                alert_err_resp(response);
+                            }
+                        });
+                    });
+
+                    window.document.getElementById("hard-delete-comment-{{comment.id}}").addEventListener("click", () => {
+                        if (window.confirm("硬删除将会删除全部回复该评论的评论, 确定吗?")) {
+                            _delete("/edit/comment/{{comment.id}}?hard").then(response => {
+                                if (response.ok) {
+                                    window.document.getElementById("comment-{{comment.id}}").remove();
+                                } else {
+                                    alert_err_resp(response);
+                                }
+                            });
+                        }
+                    });
+                </script>
+                <br/>
+            {{/each}}
+        {{/if}}
+    </label>
+
+    <script>
+        const md = window.markdownit();
+        const easy_mde = new EasyMDE({
+            autosave: {
+                enabled: true,
+                delay: 2000,
+                uniqueId: "maop-small-theme-mde-comment-{{post.id}}-" + window.location.href
+            },
+            indentWithTabs: false,
+            previewRender: (c) => md.render(c)
+        });
+
+        const delete_post_dom = window.document.getElementById("delete-post");
+        if (delete_post_dom !== null) {
+            delete_post_dom.addEventListener("click", () => {
+                _delete("/edit/" + delete_post_dom.value).then(response => {
+                    if (response.ok) {
+                        easy_mde.clearAutosavedValue();
+                        window.location.replace("/")
+                    } else {
+                        alert_err_resp(response);
+                    }
+                });
+            });
+        }
+
+        window.document.getElementById("update").addEventListener("click", () => {
+            const title = window.document.getElementById("title").value;
+
+            post(window.location.pathname, {
+                "title": title,
+                "content": easy_mde.value()
+            }).then(response => {
+                if (response.ok) {
+                    response.json().then(res => window.location.replace("/post/" + res.id));
+                } else {
+                    alert_err_resp(response);
+                }
+            });
+        })
+    </script>
+{{/inline}}
+
+{{> html}}

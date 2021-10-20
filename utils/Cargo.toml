@@ -2,7 +2,7 @@
 name = "utils"
 version = "0.1.0"
 authors = ["soeur <juzi201314@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,7 +10,15 @@ edition = "2018"
 simple-i18n = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
-byte-unit = "4.0.12"
+byte-unit = { version = "4.0", default-features = false }
 anyhow = "1.0"
-sled = "0.34"
-bincode = "1.3.3"
+argon2 = { version = "0.3", features = ["std"] }
+rand_core = { version = "0.6", features = ["std"] }
+log = "0.4"
+once_cell = "1.8.0"
+compact_str = { version = "0.1", features = ["serde"] }
+pulldown-cmark = { version = "0.8", default-features = false, features = ["simd"] }
+htmlescape = "0.3.1"
+parse_duration = "2.1.1"
+crossfire = "0.1.7"
+tokio = { version = "1", features = ["sync", "parking_lot"] }

@@ -7,7 +7,7 @@ use std::str::FromStr;
 pub struct ByteUnit(byte_unit::Byte);
 
 impl ByteUnit {
-    pub fn get_bytes(&self) -> u128 {
+    pub fn get_bytes(&self) -> u64 {
         self.0.get_bytes()
     }
 }

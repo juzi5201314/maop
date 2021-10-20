@@ -1,16 +1,113 @@
-pub use crate::db::Database;
-use crate::models::post::Post;
-use crate::models::CURD;
+pub use crate::db::new;
 
 mod db;
 pub mod models;
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 10)]
-async fn db_test() {
-    let db = Database::new().await.unwrap();
-    let mut post = Post::new("Test post", "Hello world");
-    post.insert(&db).await.unwrap();
-    post.title = "wcnm".to_string();
-    post.update(&db).await.unwrap();
-    post.delete(&db).await.unwrap();
+#[cfg(test)]
+mod test {
+    use rbatis::rbatis::Rbatis;
+
+    use crate::db;
+    use crate::models::comment::{Comments, NewComment};
+    use crate::models::post::{NewPost, Posts};
+
+    #[tokio::test]
+    async fn comment_curd_test() {
+        let conf = config::get_config_full();
+        let rb: Rbatis = db::new().await.unwrap();
+
+        let post: Posts = Posts::insert(
+            &rb,
+            NewPost {
+                title: "title",
+                content: "content",
+            },
+        )
+        .await
+        .unwrap();
+
+        let hello_comment: Comments = post
+            .reply(
+                &rb,
+                NewComment {
+                    content: "hello",
+                    nickname: "God",
+                    email: "god@exmaple.com",
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(hello_comment.content, "hello");
+        assert_eq!(hello_comment.post_id, post.id);
+
+        let world_comment: Comments = hello_comment
+            .reply_to(
+                &rb,
+                NewComment {
+                    content: "world",
+                    nickname: "Adam",
+                    email: "adam@exmaple.com",
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(world_comment.content, "world");
+
+        assert_eq!(world_comment.parent_id, Some(hello_comment.id));
+
+        assert_eq!(
+            hello_comment
+                .query_replies(&rb)
+                .await
+                .unwrap()
+                .first()
+                .map(|reply| reply.id),
+            Some(world_comment.id)
+        );
+    }
+
+    #[tokio::test]
+    async fn post_curd_test() {
+        let conf = config::get_config_full();
+        let rb: Rbatis = db::new().await.unwrap();
+
+        // insert
+        let mut post: Posts = Posts::insert(
+            &rb,
+            NewPost {
+                title: "title",
+                content: "content",
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(post.title, "title");
+        assert_eq!(post.content, "content");
+
+        // update
+        post.update(
+            &rb,
+            post.id,
+            NewPost {
+                title: "new title",
+                content: "new content",
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(post.title, "new title");
+        assert_eq!(post.content, "new content");
+
+        // query
+        let new_post: Posts =
+            Posts::select(&rb, post.id).await.unwrap();
+        assert_eq!(new_post.title, post.title);
+        assert_eq!(new_post.content, post.content);
+        assert_eq!(new_post.create_time, post.create_time);
+
+        // remove
+        new_post.remove(&rb).await.unwrap();
+        assert!(Posts::select(&rb, post.id).await.is_err());
+    }
 }

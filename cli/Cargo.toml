@@ -2,11 +2,14 @@
 name = "cli"
 version = "0.1.0"
 authors = ["soeur <juzi201314@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 core = { path = "../core" }
+config = { path = "../config" }
+http = { path = "../http" }
 
-tokio = { version = "1", features = ["full"] }
+argh = "0.1.5"
+dotenv = "0.15"

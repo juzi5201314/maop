@@ -3,3 +3,5 @@
 /run
 **/logs
 cargo-timing*
+.env
+maop.toml

@@ -1,99 +1,57 @@
-use std::ops::Deref;
-use std::str::FromStr;
-use std::time::Duration;
-
-use anyhow::Context;
-use sqlx::sqlite::SqliteLockingMode;
-use sqlx::AnyPool;
+use rbatis::core::db::{DBConnectOption, DBPoolOptions};
+use rbatis::executor::Executor;
+use rbatis::rbatis::Rbatis;
+use rbatis::DriverType;
+use sqlx::sqlite::{
+    SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous,
+};
 use sqlx::ConnectOptions;
 
-#[derive(Clone, Copy)]
-pub enum DBType {
-    Sqlite,
-    Pgsql,
-    //Mysql,
-}
+use error::Error;
 
-utils::strum!(DBType, {
-    Sqlite,
-    Pgsql
-    //Mysql
-});
+pub async fn new() -> Result<Rbatis, Error> {
+    let config = config::get_config_temp().database().clone();
+    let rb = Rbatis::new();
+    rb.link_cfg(
+        &DBConnectOption {
+            driver_type: DriverType::Sqlite,
+            sqlite: Some({
+                let mut opt = SqliteConnectOptions::new()
+                    .filename(
+                        config::get_config_temp()
+                            .data_path()
+                            .join("main.db"),
+                    )
+                    .journal_mode(SqliteJournalMode::Wal)
+                    .synchronous(SqliteSynchronous::Normal)
+                    .create_if_missing(true)
+                    .statement_cache_capacity(
+                        *config.statement_cache_capacity(),
+                    )
+                    .page_size(*config.page_size())
+                    .shared_cache(*config.shared_cache());
 
-pub struct Database {
-    ty: DBType,
-    pool: AnyPool,
-}
-
-impl Database {
-    pub async fn new() -> anyhow::Result<Self> {
-        let conf = config::get_config();
-        let db_conf = conf.database();
-        let ty = DBType::from_str(
-            db_conf
-                .uri()
-                .split_once(":")
-                .ok_or_else(|| {
-                    anyhow::anyhow!(utils::i18n!(
-                        "errors.database.unsupported_database_type"
-                    ))
-                })?
-                .0,
-        )
-        .map_err(|_| {
-            anyhow::anyhow!(
-                "{}",
-                utils::i18n!(
-                    "errors.database.unsupported_database_type"
-                )
-            )
-        })?;
-        Ok({
-            let db = Database {
-                ty,
-                pool: sqlx::any::AnyPoolOptions::default()
-                    .connect_timeout(db_conf.timeout().duration().clone())
-                    .max_connections(*db_conf.max_conn())
-                    .min_connections(*db_conf.min_conn())
-                    .max_lifetime(Some(
-                        db_conf.max_lifetime().duration().clone(),
-                    ))
-                    .idle_timeout(Some(
-                        db_conf.idle_timeout().duration().clone(),
-                    ))
-                    .connect_with(match ty {
-                        DBType::Sqlite => {
-                            let mut opt = sqlx::sqlite::SqliteConnectOptions::from_str(db_conf.uri())?
-                                .create_if_missing(true)
-                                .locking_mode(SqliteLockingMode::Normal);
-                            opt.log_statements(log::LevelFilter::Debug);
-                            opt.log_slow_statements(log::LevelFilter::Warn, db_conf.warn_time().duration().clone());
-                            opt.into()
-                        },
-                        DBType::Pgsql => {
-                            let mut opt = sqlx::postgres::PgConnectOptions::from_str(db_conf.uri())?;
-                            opt.log_statements(log::LevelFilter::Debug);
-                            opt.log_slow_statements(log::LevelFilter::Warn, db_conf.warn_time().duration().clone());
-                            opt.into()
-                        },
-                        //DBType::Mysql => sqlx::sqlite::SqliteConnectOptions::from_str(db.uri())?
-                    })
-                    .await?,
-            };
-            sqlx::migrate!("./migrations").run(db.deref()).await?;
-            db
-        })
-    }
-
-    pub fn _type(&self) -> DBType {
-        self.ty
-    }
-}
-
-impl Deref for Database {
-    type Target = AnyPool;
-
-    fn deref(&self) -> &Self::Target {
-        &self.pool
-    }
+                opt.log_statements(log::LevelFilter::Debug);
+                opt.log_slow_statements(
+                    log::LevelFilter::Warn,
+                    *config.warn_time().duration(),
+                );
+                opt
+            }),
+        },
+        &DBPoolOptions {
+            max_connections: *config.max_conn(),
+            min_connections: *config.min_conn(),
+            connect_timeout: *config.timeout().duration(),
+            max_lifetime: Some(*config.max_lifetime().duration()),
+            idle_timeout: Some(*config.idle_timeout().duration()),
+            test_before_acquire: true,
+        },
+    )
+    .await?;
+    rb.exec(include_str!("../sqls/create_posts.sql"), vec![])
+        .await?;
+    rb.exec(include_str!("../sqls/create_comments.sql"), vec![])
+        .await?;
+    Ok(rb)
 }
