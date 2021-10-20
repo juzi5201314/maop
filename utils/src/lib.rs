@@ -1,15 +1,8 @@
-use once_cell::sync::Lazy;
 pub use simple_i18n::{i18n, lang};
+use std::str::FromStr;
 
-use crate::notify::Notify;
-
-pub mod markdown;
-pub mod notify;
-pub mod password_hash;
+pub mod ser_de;
 pub mod unit;
-
-pub static SHUTDOWN_NOTIFY: Lazy<Notify> =
-    Lazy::new(Default::default);
 
 #[macro_export]
 macro_rules! builder {
@@ -41,6 +34,21 @@ macro_rules! defer {
         }
 
         let __defer = Defer($func);
+    };
+}
+
+#[macro_export]
+macro_rules! any_try {
+    ($func:expr, $format:literal, $($arg:expr),+) => {
+        {
+            use anyhow::Context;
+            $func.with_context(|| {
+                format!(
+                    $format,
+                    $($arg,)+
+                )
+            })
+        }
     };
 }
 
@@ -103,3 +111,24 @@ macro_rules! strum {
         }
     };
 }
+
+pub trait EraseOk<E> {
+    fn erase(self) -> Result<(), E>;
+}
+
+impl<T, E> EraseOk<E> for Result<T, E> {
+    fn erase(self) -> Result<(), E> {
+        match self {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+pub trait Consume: Sized {
+    fn consume(self) {
+        ()
+    }
+}
+
+impl<T> Consume for T {}

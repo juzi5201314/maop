@@ -2,7 +2,7 @@
 name = "config"
 version = "0.1.0"
 authors = ["soeur <juzi201314@gmail.com>"]
-edition = "2021"
+edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,13 +11,9 @@ utils = { path = "../utils" }
 
 anyhow = "1.0.40"
 serde = { version = "1.0.126", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
 config-rs = { version = "0.11", package = "config" }
 arc-swap = "1.3.0"
 once_cell = "1.7.2"
-notify = "5.0.0-pre.13"
-compact_str = { version = "0.1", features = ["serde"] }
-parking_lot = "0.11"
-
-# models
-dirs = "3.0"
-_log = { package = "log", version = "0.4", features = ["serde"] }
+notify = "4.0.17"
+dotenv = "0.15.0"

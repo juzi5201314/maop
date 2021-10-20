@@ -1,20 +1,9 @@
-use std::path::PathBuf;
-
 use crate::models::*;
 
 #[rustfmt::skip]
 crate::gen_config!(MaopConfig, {
-    #[serde(default = "default_data_path")]
-    data_path: PathBuf,
+    rocket: RocketConfig,
     database: DatabaseConfig,
-    log: LogConfig,
-    http: HttpConfig,
-    render: RenderConfig,
-    site: SiteConfig,
-    runtime: RuntimeConfig
+    settings: SettingsConfig,
+    log: LogConfig
 });
-
-#[inline]
-fn default_data_path() -> PathBuf {
-    dirs::home_dir().unwrap_or_default().join(".maop")
-}

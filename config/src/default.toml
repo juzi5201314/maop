@@ -1,42 +1,42 @@
-# default: "$HOME/.maop"
-# data_path = <path>
-
-[site]
-name = "Maop"
-title = "A default title for maop"
-
 [database]
-timeout = "5s"
-max_conn = 50
-min_conn = 1
+timeout = "10s"
+max_conn = 100
+min_conn = 0
 max_lifetime = "12h"
 idle_timeout = "1h"
+uri = "sqlite:data/default.db"
 # Database operations exceeding the specified execution time will issue a warning
-warn_time = "3s"
-shared_cache = false
-statement_cache_capacity = 100
-page_size = 4096
+warn_time = "1s"
 
-[http]
-bind = "127.0.0.1"
-port = "7474"
-type = "http"
-session_expiry = "30d"
+[settings]
+sled_cache_capacity = "10kb"
+sled_use_compression = true
+sled_compression_factor = 5
+# sled automatic flush interval. Under normal circumstances, there is no need to specify, settings will be flushed every time they are changed
+# sled_flush_every_ms = "500ms"
 
-[render]
-default_render = "ssr"
-strict_mode = true
-dev_mode = false
+[rocket]
+port = 7070
+addr = "0.0.0.0"
+# Number of threads to use for executing futures. (default: num_cores)
+# workers = 1
+
+# Keep-alive timeout in seconds; disabled when 0. (default: 5)
+# keep_alive = 5
+
+# Streaming read size limits.
+# [rocket.limits]
+# "pet/dog/bingo" = "10kb"
+# json = "10mb"
 
 [log]
-level = "INFO"
+# Every time it is output to stdout, it will be flushed.
+# Turning on this option can prevent the log messages of the console from being confused
+# (that is, multiple messages are written to stdout at the same time).
+# But in the case of too many log messages, it will seriously slow down the log processing speed.
+flush_stdout_every_time = true
+full_module_path = false
 
 [log.filter]
-"sqlx::query" = "INFO"
-
-# fuck rbatis
-"rbatis::plugin::log" = "WARN"
-
-# tokio runtime configuration
-[runtime]
-shutdown_timeout = "10s"
+# rocket = "warning"
+# sqlx = "warning"
