@@ -35,7 +35,7 @@ pub async fn run_http_server(
     let full_config = config::get_config_full();
     let config = full_config.http();
 
-    let password = if no_password {
+    let password = if !no_password {
         require_password(full_config.data_path())?
     } else {
         None
@@ -57,7 +57,7 @@ pub async fn run_http_server(
         )))
         .layer(AddExtensionLayer::new(
             SessionStore::new(
-                full_config.data_path().clone().join("session.data"),
+                full_config.data_path().clone().join("sessions"),
             )
             .await?,
         ));
