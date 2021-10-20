@@ -19,23 +19,37 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+          
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - uses: actions-rs/cargo@v1
+        name: build
         with:
           command: build 
           args: --workspace
 
       - uses: actions-rs/cargo@v1
+        name: tests
         with:
           command: test
           args: --workspace --no-fail-fast
 
       - uses: actions-rs/cargo@v1
+        name: fmt
         with:
           command: fmt
           args: --all -- --check
 
       - uses: actions-rs/cargo@v1
+        name: clippy
         with:
           command: clippy
           args: -- -D warnings
