@@ -34,7 +34,7 @@ jobs:
         name: build
         with:
           command: build 
-          args: --workspace
+          args: --workspace --no-default-features
 
       - uses: actions-rs/cargo@v1
         name: tests
