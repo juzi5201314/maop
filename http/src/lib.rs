@@ -153,6 +153,7 @@ fn request_password_from_input(
     }
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_http_server() {
     config::init(vec![]).unwrap();

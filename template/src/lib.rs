@@ -20,6 +20,7 @@ pub struct TemplateManager<'reg> {
 
 impl<'reg> TemplateManager<'reg> {
     pub fn new() -> anyhow::Result<Self> {
+        config::init(vec![]).unwrap();
         let config_guard = config::get_config_temp();
         let config = config_guard.render();
         let mut hbs = Handlebars::new();
@@ -69,6 +70,6 @@ impl<'reg> TemplateManager<'reg> {
 struct A;
 #[tokio::test]
 async fn render_test() {
-    let mut tg = TemplateManager::new().unwrap();
+    let tg = TemplateManager::new().unwrap();
     dbg!(tg.hbs.get_templates());
 }

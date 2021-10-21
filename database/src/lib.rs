@@ -16,7 +16,7 @@ mod test {
 
     #[tokio::test]
     async fn comment_curd_test() {
-        let conf = config::get_config_full();
+        config::init(vec![]).unwrap();
         let rb: Rbatis = db::new().await.unwrap();
 
         let post: Posts = Posts::insert(
@@ -72,7 +72,7 @@ mod test {
 
     #[tokio::test]
     async fn post_curd_test() {
-        let conf = config::get_config_full();
+        config::init(vec![]).unwrap();
         let rb: Rbatis = db::new().await.unwrap();
 
         // insert

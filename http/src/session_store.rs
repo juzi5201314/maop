@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fs::{create_dir, remove_dir_all, remove_file};
+use std::fs::{create_dir, create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -26,7 +26,7 @@ impl FileStore {
     where
         P: AsRef<Path>,
     {
-        create_dir(path.as_ref())?;
+        create_dir_all(path.as_ref())?;
         Ok(FileStore {
             cache: Arc::new(RwLock::new(HashMap::new())),
             path: path.as_ref().to_path_buf(),
