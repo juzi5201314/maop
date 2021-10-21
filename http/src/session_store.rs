@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use std::fs::{create_dir, create_dir_all, remove_dir_all, remove_file};
+use std::fs::{
+    create_dir, create_dir_all, remove_dir_all, remove_file,
+};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
