@@ -10,8 +10,7 @@ members = [
     "utils",
     "proc_macro",
     "database",
-    "http",
-    "error"
+    "http"
 ]
 
 [profile.release]
