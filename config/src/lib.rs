@@ -161,15 +161,14 @@ impl Config {
 
     fn create_data_dir(data_path: &Path) -> std::io::Result<()> {
         if !data_path.exists() {
-            // 如果不能创建data path, 程序将无法继续运行下去, 所以在这里panic是合理的
+            std::fs::create_dir_all(data_path)?;
+            _log::debug!("create data dir: {:?}", data_path);
+        } else {
             assert!(
                 data_path.is_dir(),
                 "data path: `{:?}` no a dir",
                 data_path
             );
-
-            std::fs::create_dir_all(data_path)?;
-            _log::debug!("create data dir: {:?}", data_path);
         }
         Ok(())
     }
