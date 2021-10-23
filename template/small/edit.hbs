@@ -75,7 +75,7 @@
             autosave: {
                 enabled: true,
                 delay: 2000,
-                uniqueId: "maop-small-theme-mde-comment-{{post.id}}-" + window.location.href
+                uniqueId: "maop-small-theme-mde-comment-{{#if post}}{{post.id}}{{/if}}-" + window.location.href
             },
             indentWithTabs: false,
             previewRender: (c) => md.render(c)
