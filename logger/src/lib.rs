@@ -219,7 +219,7 @@ impl Record {
         #[inline]
         async fn new_file(date: NaiveDate) -> std::io::Result<File> {
             let path = get_config_temp().data_path().join("log");
-            let filename = format!("{}.log", date.to_string());
+            let filename = format!("{}.log", date);
 
             create_dir_all(&path)?;
 
