@@ -1,3 +1,7 @@
+#![feature(result_flattening)]
+
+use futures::FutureExt;
+use futures::TryFutureExt;
 use tokio::runtime::Builder;
 
 use utils::SHUTDOWN_NOTIFY;
@@ -44,16 +48,17 @@ pub fn run(configs: Vec<String>, no_password: bool) {
     rt.block_on(async move {
         logger::init();
 
-        tokio::spawn(async move {
+        let join_handle = tokio::spawn(async move {
             if no_password {
                 log::warn!("you are running in no-password mode");
             }
-            http::run_http_server(no_password)
-                .await
-                .expect("http server error");
+            http::run_http_server(no_password).await
         });
 
-        tokio::signal::ctrl_c().await.unwrap();
+        tokio::select! (
+            res = join_handle.map(|x| x.map_err(Into::into).flatten()) => res,
+            res = tokio::signal::ctrl_c().map_err(Into::into) => res
+        ).unwrap();
 
         log::info!("Shutting down...");
 
