@@ -9,7 +9,7 @@ use async_session::{Session, SessionStore as AsyncSessionStore};
 use compact_str::CompactStr;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::RwLock;
+use tokio::sync::Mutex;
 
 #[cfg(not(feature = "session_store_rocksdb"))]
 pub type SessionStore = FileStore;
@@ -18,7 +18,7 @@ pub type SessionStore = rocksdb::RocksdbStore;
 
 #[derive(Debug, Clone)]
 pub struct FileStore {
-    cache: Arc<RwLock<HashMap<CompactStr, Session>>>,
+    cache: Arc<Mutex<HashMap<CompactStr, Session>>>,
     path: PathBuf,
 }
 
@@ -30,7 +30,7 @@ impl FileStore {
     {
         create_dir_all(path.as_ref())?;
         Ok(FileStore {
-            cache: Arc::new(RwLock::new(HashMap::new())),
+            cache: Arc::new(Mutex::new(HashMap::new())),
             path: path.as_ref().to_path_buf(),
         })
     }
@@ -71,16 +71,14 @@ impl AsyncSessionStore for FileStore {
         cookie_value: String,
     ) -> async_session::Result<Option<Session>> {
         let id = Session::id_from_cookie_value(&cookie_value)?;
-        Ok(if let Some(session) = self.cache.read().await.get(&*id) {
+        let mut cache = self.cache.lock().await;
+        Ok(if let Some(session) = cache.get(&*id) {
             Some(session.clone())
         } else {
             let session =
                 self.load(&id).await?.and_then(Session::validate);
             if let Some(session) = &session {
-                self.cache
-                    .write()
-                    .await
-                    .insert(id.into(), session.clone());
+                cache.insert(id.into(), session.clone());
             }
             session
         })
@@ -92,7 +90,7 @@ impl AsyncSessionStore for FileStore {
     ) -> async_session::Result<Option<String>> {
         self.store(&session).await?;
         self.cache
-            .write()
+            .lock()
             .await
             .insert(session.id().into(), session.clone());
         // session.reset_data_changed();
@@ -103,13 +101,13 @@ impl AsyncSessionStore for FileStore {
         &self,
         session: Session,
     ) -> async_session::Result {
-        self.cache.write().await.remove(session.id());
+        self.cache.lock().await.remove(session.id());
         remove_file(self.path.join(session.id()))?;
         Ok(())
     }
 
     async fn clear_store(&self) -> async_session::Result {
-        self.cache.write().await.clear();
+        self.cache.lock().await.clear();
         remove_dir_all(&self.path)
             .and_then(|_| create_dir(&self.path))?;
         Ok(())
