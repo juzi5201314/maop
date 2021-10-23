@@ -72,6 +72,6 @@ impl<'de> Visitor<'de> for TimeVisitor {
     where
         E: serde::de::Error,
     {
-        TimeUnit::from_str(v).map_err(|e| E::custom(e))
+        TimeUnit::from_str(v).map_err(E::custom)
     }
 }

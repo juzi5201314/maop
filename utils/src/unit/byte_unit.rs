@@ -65,6 +65,6 @@ impl<'de> Visitor<'de> for ByteVisitor {
         where
             E: serde::de::Error,
     {
-        ByteUnit::from_str(v).map_err(|e| E::custom(e))
+        ByteUnit::from_str(v).map_err(E::custom)
     }
 }
