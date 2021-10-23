@@ -57,7 +57,7 @@ impl FileStore {
                 OpenOptions::new().read(true).open(path).await?;
             let mut data = Vec::with_capacity(200);
             file.read_to_end(&mut data).await?;
-            bincode::deserialize(&*data)?
+            Some(bincode::deserialize(&*data)?)
         } else {
             None
         })
@@ -74,7 +74,15 @@ impl AsyncSessionStore for FileStore {
         Ok(if let Some(session) = self.cache.read().await.get(&*id) {
             Some(session.clone())
         } else {
-            self.load(&id).await?.and_then(Session::validate)
+            let session =
+                self.load(&id).await?.and_then(Session::validate);
+            if let Some(session) = &session {
+                self.cache
+                    .write()
+                    .await
+                    .insert(id.into(), session.clone());
+            }
+            session
         })
     }
 
