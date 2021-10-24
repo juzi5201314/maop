@@ -45,7 +45,7 @@ impl From<anyhow::Error> for HttpError {
     fn from(err: anyhow::Error) -> Self {
         HttpError {
             code: StatusCode::INTERNAL_SERVER_ERROR,
-            msg: format!("{:?}", err).into()
+            msg: format!("{:?}", err).into(),
         }
     }
 }

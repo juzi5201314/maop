@@ -13,32 +13,23 @@ config = { path = "../config" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-flate2 = { version = "1", features = [ "zlib-ng-compat" ], default-features = false }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
-uuid = { version = "0.8", features = ["v4"] }
 log = "0.4"
 compact_str = { version = "0.1", features = ["serde"] }
+sqlx-core = { version = "0.5", default-features = false }
 
-[dependencies.rbatis]
-version = "2.1.3"
+[dependencies.sea-orm]
+version = "0.3"
 default-features = false
-features = ["tokio1", "sqlite"]
-
-[dependencies.sqlx]
-version = "0.5"
-default-features = false
-features = [
-    "sqlite",
-    "migrate",
-    "uuid",
-    "chrono",
-    "tls",
-    "any",
-    "macros"
-]
+features = ["macros", "mock", "sqlx-chrono", "sqlx-sqlite"]
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+
+[features]
+default = ["native-tls"]
+native-tls = ["sea-orm/runtime-tokio-native-tls"]
+rustls = ["sea-orm/runtime-tokio-rustls"]

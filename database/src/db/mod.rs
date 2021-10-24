@@ -1,61 +1,72 @@
 use anyhow::Context;
-use rbatis::core::db::{DBConnectOption, DBPoolOptions};
-use rbatis::executor::Executor;
-use rbatis::rbatis::Rbatis;
-use rbatis::DriverType;
-use sqlx::sqlite::{
-    SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous,
+use sea_orm::prelude::DbConn;
+use sea_orm::{ConnectionTrait, Schema, SqlxSqliteConnector};
+use sqlx_core::connection::ConnectOptions;
+use sqlx_core::pool::PoolOptions;
+use sqlx_core::sqlite::{
+    SqliteConnectOptions, SqliteJournalMode, SqliteLockingMode,
+    SqliteSynchronous,
 };
-use sqlx::ConnectOptions;
 
-pub async fn new() -> anyhow::Result<Rbatis> {
-    let config = config::get_config_temp().database().clone();
-    let rb = Rbatis::new();
-    rb.link_cfg(
-        &DBConnectOption {
-            driver_type: DriverType::Sqlite,
-            sqlite: Some({
-                let mut opt = SqliteConnectOptions::new()
-                    .filename(
-                        config::get_config_temp()
-                            .data_path()
-                            .join("main.db"),
-                    )
-                    .journal_mode(SqliteJournalMode::Wal)
-                    .synchronous(SqliteSynchronous::Normal)
-                    .create_if_missing(true)
-                    .statement_cache_capacity(
-                        *config.statement_cache_capacity(),
-                    )
-                    .page_size(*config.page_size())
-                    .shared_cache(*config.shared_cache());
+pub async fn new() -> anyhow::Result<DbConn> {
+    let config_full = config::get_config_full();
+    let config = config_full.database();
 
-                opt.log_statements(log::LevelFilter::Debug);
-                opt.log_slow_statements(
-                    log::LevelFilter::Warn,
-                    *config.warn_time().duration(),
-                );
-                opt
-            }),
-        },
-        &DBPoolOptions {
-            max_connections: *config.max_conn(),
-            min_connections: *config.min_conn(),
-            connect_timeout: *config.timeout().duration(),
-            max_lifetime: Some(*config.max_lifetime().duration()),
-            idle_timeout: Some(*config.idle_timeout().duration()),
-            test_before_acquire: true,
-        },
+    let mut opt = SqliteConnectOptions::new()
+        .filename(config_full.data_path().join("main.db"))
+        .journal_mode(SqliteJournalMode::Wal)
+        .locking_mode(SqliteLockingMode::Normal)
+        .synchronous(SqliteSynchronous::Normal)
+        .create_if_missing(true)
+        .statement_cache_capacity(*config.statement_cache_capacity())
+        .page_size(*config.page_size())
+        .shared_cache(*config.shared_cache());
+
+    opt.log_statements(log::LevelFilter::Debug);
+    opt.log_slow_statements(
+        log::LevelFilter::Warn,
+        *config.warn_time().duration(),
+    );
+
+    let db = SqlxSqliteConnector::from_sqlx_sqlite_pool(
+        PoolOptions::new()
+            .max_connections(*config.max_conn())
+            .min_connections(*config.min_conn())
+            .connect_timeout(*config.timeout().duration())
+            .max_lifetime(*config.max_lifetime().duration())
+            .idle_timeout(*config.idle_timeout().duration())
+            .test_before_acquire(true)
+            .connect_with(opt)
+            .await
+            .context("connect to database")?,
+    );
+
+    setup_schema(&db).await.context("setup schema")?;
+
+    Ok(db)
+}
+
+async fn setup_schema(db: &DbConn) -> anyhow::Result<()> {
+    db.execute(
+        db.get_database_backend().build(
+            Schema::create_table_from_entity(
+                crate::models::post::Entity,
+            )
+            .if_not_exists(),
+        ),
     )
     .await
-    .context("link database")?;
-    (try {
-        rb.exec(include_str!("../sqls/create_posts.sql"), vec![])
-            .await?;
-        rb.exec(include_str!("../sqls/create_comments.sql"), vec![])
-            .await?;
-    }: anyhow::Result<()>)
-        .context("create table")?;
+    .context("create posts")?;
 
-    Ok(rb)
+    db.execute(
+        db.get_database_backend().build(
+            Schema::create_table_from_entity(
+                crate::models::comment::Entity,
+            )
+            .if_not_exists(),
+        ),
+    )
+    .await
+    .context("create comments")?;
+    Ok(())
 }

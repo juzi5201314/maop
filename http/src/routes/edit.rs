@@ -4,41 +4,43 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::{Extension, FromRequest, Query, RequestParts};
 use axum::handler::{delete, get, post};
+use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
 use compact_str::CompactStr;
-use rbatis::rbatis::Rbatis;
+use sea_orm::prelude::DbConn;
 
 use config::SiteConfig;
-use database::models::comment::{Comments, NewComment};
-use database::models::post::{NewPost, Posts};
+use database::models::comment::{Comment, CommentModel, NewComment};
+use database::models::post::{NewPost, Post, PostModel};
 
 use crate::error::HttpError;
 use crate::error::HttpServerError;
 use crate::login_status::Logged;
 
 pub fn routes_post() -> Router<BoxRoute> {
-    let index = match config::get_config_temp().render().default_render() {
-        config::RenderStrategy::SSR => Router::new()
-            .route(
-                "/:id",
-                get(index_ssr_edit_post)
-                    .post(update_post)
-                    .delete(delete_post),
-            )
-            .route("/", get(index_ssr_new_post).post(new_post))
-            .boxed(),
-        config::RenderStrategy::CSR => Router::new()
-            .route(
-                "/:id",
-                get(index_csr_edit_post)
-                    .post(update_post)
-                    .delete(delete_post),
-            )
-            .route("/", get(index_csr_new_post).post(new_post))
-            .boxed(),
-    };
+    let index =
+        match config::get_config_temp().render().default_render() {
+            config::RenderStrategy::SSR => Router::new()
+                .route(
+                    "/:id",
+                    get(index_ssr_edit_post)
+                        .post(update_post)
+                        .delete(delete_post),
+                )
+                .route("/", get(index_ssr_new_post).post(new_post))
+                .boxed(),
+            config::RenderStrategy::CSR => Router::new()
+                .route(
+                    "/:id",
+                    get(index_csr_edit_post)
+                        .post(update_post)
+                        .delete(delete_post),
+                )
+                .route("/", get(index_csr_new_post).post(new_post))
+                .boxed(),
+        };
 
     let router = index
         .route("/:id/api", get(index_api_edit_post))
@@ -61,27 +63,35 @@ pub fn routes_comment() -> Router<BoxRoute> {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct PostData {
-    title: CompactStr,
+    title: String,
     content: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
+pub struct UpdatePostData {
+    title: Option<String>,
+    content: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct PostRes {
-    id: u64,
+    id: u32,
 }
 
 async fn update_post(
     _: Logged,
-    extract::Path(post_id): extract::Path<u64>,
-    Json(data): Json<PostData>,
-    Extension(rb): Extension<Arc<Rbatis>>,
+    extract::Path(post_id): extract::Path<u32>,
+    Json(data): Json<UpdatePostData>,
+    Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<PostRes>, HttpError> {
-    Posts::update_by_id(
-        &*rb,
+    Post::update(
+        &*db,
         post_id,
-        NewPost {
-            title: data.title,
-            content: utils::markdown::render(&data.content)?,
+        data.title,
+        if let Some(s) = data.content {
+            Some(utils::markdown::render(&s)?)
+        } else {
+            None
         },
     )
     .await?;
@@ -91,25 +101,25 @@ async fn update_post(
 async fn new_post(
     _: Logged,
     Json(data): Json<PostData>,
-    Extension(rb): Extension<Arc<Rbatis>>,
+    Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<PostRes>, HttpError> {
-    let post = Posts::insert(
-        &*rb,
+    let post_id = Post::insert(
+        &*db,
         NewPost {
             title: data.title,
             content: utils::markdown::render(&data.content)?,
         },
     )
     .await?;
-    Ok(Json(PostRes { id: post.id }))
+    Ok(Json(PostRes { id: post_id }))
 }
 
 async fn delete_post(
     _: Logged,
-    extract::Path(post_id): extract::Path<u64>,
-    Extension(rb): Extension<Arc<Rbatis>>,
+    extract::Path(post_id): extract::Path<u32>,
+    Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<PostRes>, HttpError> {
-    Posts::remove_by_id(&*rb, post_id).await?;
+    Post::delete(&*db, post_id).await?;
     Ok(Json(PostRes { id: post_id }))
 }
 
@@ -119,9 +129,7 @@ pub async fn index_ssr_new_post<'reg>(
     data: NewPostData,
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
-    tm.render("edit", &data)
-        .map(Html)
-        .map_err(Into::into)
+    tm.render("edit", &data).map(Html).map_err(Into::into)
 }
 
 pub async fn index_csr_new_post() -> &'static str {
@@ -160,9 +168,7 @@ pub async fn index_ssr_edit_post<'reg>(
     data: EditPostData,
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
-    tm.render("edit", &data)
-        .map(Html)
-        .map_err(Into::into)
+    tm.render("edit", &data).map(Html).map_err(Into::into)
 }
 
 pub async fn index_csr_edit_post() -> &'static str {
@@ -179,8 +185,8 @@ pub async fn index_api_edit_post(
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct EditPostData {
     site: SiteConfig,
-    post: Posts,
-    comments: BTreeMap<u64, Comments>,
+    post: PostModel,
+    comments: BTreeMap<u32, CommentModel>,
 }
 
 #[async_trait::async_trait]
@@ -192,32 +198,38 @@ impl FromRequest for EditPostData {
     ) -> Result<Self, Self::Rejection> {
         Logged::from_request(req).await?;
         let extract::Path(post_id) =
-            extract::Path::<u64>::from_request(req).await?;
-        let Extension(rb): Extension<Arc<Rbatis>> =
-            Extension::<Arc<Rbatis>>::from_request(req)
+            extract::Path::<u32>::from_request(req).await?;
+        let Extension(db): Extension<Arc<DbConn>> =
+            Extension::from_request(req)
                 .await
-                .server_error("`Rbatis` extension missing")?;
+                .server_error("`DbConn` extension missing")?;
         let site = config::get_config_temp().site().clone();
 
-        let post = Posts::select(&rb, post_id).await?;
+        let post_and_comments = Post::find_and_commit(&*db, post_id)
+            .await?
+            .ok_or_else(|| {
+                HttpError::from_const(
+                    StatusCode::NOT_FOUND,
+                    "post not found",
+                )
+            })?;
 
         Ok(EditPostData {
             site,
-            comments: post
-                .query_comments(&rb)
-                .await?
+            comments: post_and_comments
+                .1
                 .into_iter()
                 .map(|comment| (comment.id, comment))
                 .collect(),
-            post,
+            post: post_and_comments.0,
         })
     }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct CommentData {
-    post_id: u64,
-    reply_to: Option<u64>,
+    post_id: u32,
+    reply_to: Option<u32>,
     nickname: CompactStr,
     email: CompactStr,
     content: CompactStr,
@@ -225,37 +237,37 @@ pub struct CommentData {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct CommentRes {
-    id: u64,
+    id: u32,
 }
 
 async fn new_comment(
     Json(data): Json<CommentData>,
-    Extension(rb): Extension<Arc<Rbatis>>,
+    Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<CommentRes>, HttpError> {
-    let comment = Comments::insert(
-        &*rb,
+    let comment_id = Comment::insert(
+        &*db,
         data.post_id,
         NewComment {
             content: utils::markdown::render_safe(&data.content)?,
-            nickname: data.nickname,
-            email: data.email,
+            nickname: data.nickname.to_string(),
+            email: data.email.to_string(),
         },
         data.reply_to,
     )
     .await?;
-    Ok(Json(CommentRes { id: comment.id }))
+    Ok(Json(CommentRes { id: comment_id }))
 }
 
 async fn delete_comment(
     _: Logged,
-    extract::Path(comment_id): extract::Path<u64>,
+    extract::Path(comment_id): extract::Path<u32>,
     Query(params): Query<HashMap<CompactStr, CompactStr>>,
-    Extension(rb): Extension<Arc<Rbatis>>,
+    Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<CommentRes>, HttpError> {
     if params.get("hard").is_some() {
-        Comments::hard_delete(&*rb, comment_id).await?;
+        Comment::hard_delete(&*db, comment_id).await?;
     } else {
-        Comments::soft_delete(&*rb, comment_id).await?;
+        Comment::soft_delete(&*db, comment_id).await?;
     }
     Ok(Json(CommentRes { id: comment_id }))
 }

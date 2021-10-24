@@ -1,169 +1,175 @@
+use anyhow::Context;
 use chrono::NaiveDateTime;
-use compact_str::CompactStr;
-use rbatis::core::value::DateTimeNow;
-use rbatis::crud::CRUDMut;
-use rbatis::crud::{Skip, CRUD};
-use rbatis::crud_table;
-use rbatis::rbatis::Rbatis;
+use sea_orm::entity::prelude::DbConn;
+use sea_orm::{
+    ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait,
+    DeriveEntityModel, DeriveIntoActiveModel, DerivePrimaryKey,
+    EntityTrait, EnumIter, IdenStatic, IntoActiveModel,
+    PrimaryKeyTrait, QueryFilter, QueryOrder, Related, RelationDef,
+    RelationTrait,
+};
 
-#[derive(Default, Clone)]
-pub struct NewComment<S1, S2, S3>
-where
-    S1: Into<CompactStr> + Clone,
-    S2: Into<CompactStr> + Clone,
-    S3: Into<CompactStr> + Clone,
-{
-    pub content: S1,
-    pub nickname: S2,
-    pub email: S3,
-}
+use super::def_fn;
 
-#[crud_table]
-pub struct Comments {
-    pub id: u64,
+pub type Comment = Entity;
+pub type CommentModel = Model;
+
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, serde::Serialize, serde::Deserialize)]
+#[sea_orm(table_name = "comments")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: u32,
 
     /// 对应的文章
-    pub post_id: u64,
-    pub content: CompactStr,
+    pub post_id: u32,
+    pub content: String,
     pub create_time: NaiveDateTime,
     /// 发布者邮箱
-    pub email: CompactStr,
+    pub email: String,
     /// 发布者昵称
-    pub nickname: CompactStr,
+    pub nickname: String,
 
     /// 回复的评论id
-    pub parent_id: Option<u64>,
+    #[sea_orm(nullable)]
+    pub parent_id: Option<u32>,
 
     /// 已经删除(对用户而言)
-    #[serde(serialize_with = "serialize")]
-    #[serde(deserialize_with = "deserialize")]
     pub deleted: bool,
 }
 
-use serde::{Deserialize, Deserializer, Serializer};
-
-fn serialize<S>(val: &bool, ser: S) -> Result<S::Ok, S::Error> where S: Serializer {
-    ser.serialize_u8(*val as u8)
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {
+    Post,
 }
 
-fn deserialize<'de, D>(der: D) -> Result<bool, D::Error> where D: Deserializer<'de> {
-    Ok(u8::deserialize(der)? != 0)
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Relation::Post => Entity::belongs_to(super::post::Entity)
+                .from(Column::PostId)
+                .to(super::post::Column::Id)
+                .into(),
+        }
+    }
 }
 
-impl Comments {
-    #[inline]
-    pub async fn query_all(rb: &Rbatis) -> anyhow::Result<Vec<Self>> {
-        rb.fetch_list().await.map_err(Into::into)
+impl ActiveModelBehavior for ActiveModel {}
+
+impl Related<super::post::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Post.def()
     }
+}
 
-    /// 只是把评论替换为`该评论已删除`.
-    /// 并没有删除该评论
-    pub async fn soft_delete(
-        rb: &Rbatis,
-        id: u64,
-    ) -> anyhow::Result<()> {
-        rb.update_by_wrapper::<Self>(
-            &Comments {
-                id,
-                post_id: 0,
-                parent_id: Option::None,
-                create_time: NaiveDateTime::now(),
-                content: CompactStr::default(),
-                email: CompactStr::default(),
-                nickname: CompactStr::default(),
-                deleted: true,
-            },
-            rb.new_wrapper().eq("id", id),
-            &[
-                Skip::Column("id"),
-                Skip::Column("post_id"),
-                Skip::Column("create_time"),
-                Skip::Column("parent_id"),
-                Skip::Column("content"),
-                Skip::Column("email"),
-                Skip::Column("nickname"),
-            ],
-        )
-        .await?;
-        Ok(())
+#[derive(DeriveIntoActiveModel)]
+pub struct NewComment {
+    pub nickname: String,
+    pub email: String,
+    pub content: String,
+}
+
+#[derive(DeriveIntoActiveModel)]
+struct DeleteComment {
+    id: u32,
+}
+
+pub trait AsCommentId {
+    fn as_comment_id(&self) -> u32;
+}
+
+impl AsCommentId for &CommentModel {
+    fn as_comment_id(&self) -> u32 {
+        self.post_id
     }
+}
 
-    /// 删除评论并且删除全部回复该评论的评论
-    pub async fn hard_delete(
-        rb: &Rbatis,
-        id: u64,
-    ) -> anyhow::Result<()> {
-        rb.remove_by_wrapper::<Self>(
-            rb.new_wrapper().eq("id", id).or().eq("parent_id", id),
-        )
-        .await?;
-        Ok(())
+impl AsCommentId for u32 {
+    fn as_comment_id(&self) -> u32 {
+        *self
     }
+}
 
-    #[inline]
-    pub async fn select(rb: &Rbatis, id: u64) -> anyhow::Result<Self> {
-        rb.fetch_by_column("id", &id).await.map_err(Into::into)
-    }
+impl Comment {
+    def_fn!(
+        find_all(db) -> Vec<CommentModel> {
+            Comment::find().all(db).await.context("Comment::find_all")
+        }
+    );
 
-    pub async fn insert<S1, S2, S3>(
-        rb: &Rbatis,
-        post_id: u64,
-        new_comment: NewComment<S1, S2, S3>,
-        reply_to: Option<u64>,
-    ) -> anyhow::Result<Self>
-    where
-        S1: Into<CompactStr> + Clone,
-        S2: Into<CompactStr> + Clone,
-        S3: Into<CompactStr> + Clone,
-    {
-        let mut tx = rb.acquire_begin().await?;
+    def_fn!(
+        hard_delete(db, id: u32) -> () {
+            (DeleteComment {
+                id
+            }).into_active_model()
+                .delete(db)
+                .await
+                .map(|_| {})
+                .context("Comment::hard_delete")
+        }
+    );
 
-        let last_id = tx
-            .save(
-                &Comments {
-                    id: 0,
-                    post_id,
-                    content: new_comment.content.into(),
-                    create_time: NaiveDateTime::now(),
-                    email: new_comment.email.into(),
-                    nickname: new_comment.nickname.into(),
-                    parent_id: reply_to,
-                    deleted: false,
-                },
-                &[Skip::Column("id")],
-            )
-            .await?
-            .last_insert_id
-            .unwrap();
-        let comment = tx.fetch_by_column("id", &last_id).await?;
-        tx.commit().await?;
-        Ok(comment)
-    }
+    def_fn!(
+        soft_delete(db, id: u32) -> () {
+            (ActiveModel {
+                id: ActiveValue::set(id),
+                deleted: ActiveValue::set(true),
+                ..Default::default()
+            }).into_active_model()
+                .delete(db)
+                .await
+                .map(|_| {})
+                .context("Comment::soft_delete")
+        }
+    );
 
-    #[inline]
-    pub async fn reply_to<S1, S2, S3>(
-        &self,
-        rb: &Rbatis,
-        new_comment: NewComment<S1, S2, S3>,
-    ) -> anyhow::Result<Self>
-    where
-        S1: Into<CompactStr> + Clone,
-        S2: Into<CompactStr> + Clone,
-        S3: Into<CompactStr> + Clone,
-    {
-        Self::insert(rb, self.post_id, new_comment, Some(self.id))
+    def_fn!(
+        find_one(db, id: u32) -> Option<CommentModel> {
+            Comment::find_by_id(id).one(db).await.context("Comment::find_one")
+        }
+    );
+
+    def_fn!(
+        find_replies(db, id: u32) -> Vec<CommentModel> {
+            Comment::find()
+            .filter(Column::ParentId.contains(&id.to_string()))
+            .order_by_desc(Column::CreateTime)
+            .all(db)
             .await
-    }
+            .context("Comment::find_replies")
+        }
+    );
 
+    def_fn!(
+        insert(db, post_id: u32, new_comment: NewComment, reply_to: Option<u32>) -> u32 {
+            let now = chrono::Local::now().naive_local();
+            let mut active_model = new_comment.into_active_model();
+
+            active_model.post_id = ActiveValue::set(post_id);
+            active_model.create_time = ActiveValue::set(now);
+            active_model.deleted = ActiveValue::set(false);
+            active_model.parent_id = ActiveValue::set(reply_to);
+            active_model.into_active_model()
+                .insert(db)
+                .await
+                .map(|am: ActiveModel| am.id.unwrap())
+                .context("Comment::insert")
+        }
+    );
+}
+
+impl CommentModel {
     #[inline]
-    pub async fn query_replies(
+    pub async fn reply(
         &self,
-        rb: &Rbatis,
-    ) -> anyhow::Result<Vec<Self>> {
-        rb.fetch_list_by_wrapper(
-            rb.new_wrapper().eq("parent_id", self.id),
+        db: &DbConn,
+        new_comment: NewComment,
+    ) -> anyhow::Result<u32> {
+        Comment::insert(
+            db,
+            self.post_id,
+            new_comment,
+            Some(self.id),
         )
         .await
-        .map_err(Into::into)
     }
 }

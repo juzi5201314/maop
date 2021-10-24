@@ -21,6 +21,7 @@ use utils::SHUTDOWN_NOTIFY;
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};
 use crate::session_store::SessionStore;
+use sea_orm::prelude::DbConn;
 
 mod cookies;
 mod error;
@@ -53,7 +54,7 @@ pub async fn run_http_server(
             TemplateManager::new()?,
         )))
         .layer(AddExtensionLayer::new(Arc::new(
-            database::new().await?,
+            database::new().await? as DbConn,
         )))
         .layer(AddExtensionLayer::new(
             SessionStore::new(

@@ -1,164 +1,172 @@
+use anyhow::Context;
 use chrono::NaiveDateTime;
-use compact_str::CompactStr;
-use rbatis::core::value::DateTimeNow;
-use rbatis::crud::CRUDMut;
-use rbatis::crud::{Skip, CRUD};
-use rbatis::crud_table;
-use rbatis::rbatis::Rbatis;
+use sea_orm::prelude::DbConn;
+use sea_orm::{
+    ActiveModelBehavior, ActiveModelTrait, ActiveValue,
+    DeriveEntityModel, DeriveIntoActiveModel, DerivePrimaryKey,
+    DeriveRelation, EntityTrait, EnumIter, IdenStatic,
+    IntoActiveModel, PrimaryKeyTrait, Related, RelationDef,
+    RelationTrait,
+};
 
-use crate::models::comment::{Comments, NewComment};
+use crate::models::comment::{
+    AsCommentId, Comment, CommentModel, NewComment,
+};
 
-#[derive(Default, Clone)]
-pub struct NewPost<S1, S2>
-where
-    S1: Into<CompactStr> + Clone,
-    S2: Into<CompactStr> + Clone,
-{
-    pub title: S1,
-    pub content: S2,
-}
+use super::def_fn;
 
-#[crud_table]
-pub struct Posts {
-    pub id: u64,
+pub type Post = Entity;
+pub type PostModel = Model;
 
-    pub title: CompactStr,
-    pub content: CompactStr,
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, serde::Serialize, serde::Deserialize)]
+#[sea_orm(table_name = "posts")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: u32,
+    pub title: String,
+    pub content: String,
 
     pub create_time: NaiveDateTime,
     pub last_modified_time: NaiveDateTime,
 }
 
-impl Posts {
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(has_many = "super::comment::Entity")]
+    Comment,
+}
+
+impl ActiveModelBehavior for ActiveModel {}
+
+impl Related<super::comment::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Comment.def()
+    }
+}
+
+#[derive(DeriveIntoActiveModel)]
+struct DeletePost {
+    id: u32,
+}
+
+#[derive(DeriveIntoActiveModel)]
+pub struct NewPost {
+    pub title: String,
+    pub content: String,
+}
+
+impl Post {
+    def_fn!(
+        find_all(db) -> Vec<PostModel> {
+            Post::find().all(db).await.context("Post::find_all")
+        }
+    );
+
+    def_fn!(
+        delete(db, id: u32) -> () {
+            (DeletePost {
+                id
+            }).into_active_model()
+                .delete(db)
+                .await
+                .map(|_| {})
+                .context("Post::delete")
+        }
+    );
+
+    def_fn!(
+        find_one(db, id: u32) -> Option<PostModel> {
+            Post::find_by_id(id).one(db).await.context("Post::find_one")
+        }
+    );
+
+    def_fn!(
+        find_and_commit(db, id: u32) -> Option<(PostModel, Vec<CommentModel>)> {
+            Post::find_by_id(id)
+            .find_with_related(super::comment::Entity)
+            .all(db)
+            .await
+            .map(|vec| vec.into_iter().next())
+            .context("Post::find_and_commit")
+        }
+    );
+
+    def_fn!(
+        insert(db, new_post: NewPost) -> u32 {
+            let now = chrono::Local::now().naive_local();
+            let mut active_model = new_post.into_active_model();
+            active_model.create_time = ActiveValue::set(now);
+            active_model.last_modified_time = ActiveValue::set(now);
+            active_model
+                .insert(db)
+                .await
+                .map(|am: ActiveModel| am.id.unwrap())
+                .context("Post::insert")
+        }
+    );
+
+    def_fn!(
+        update(db, id: u32, title: Option<String>, content: Option<String>) -> () {
+            let now = chrono::Local::now().naive_local();
+            (ActiveModel {
+                id: ActiveValue::set(id),
+                title: title.map(ActiveValue::set).unwrap_or_else(ActiveValue::unset),
+                content: content.map(ActiveValue::set).unwrap_or_else(ActiveValue::unset),
+                last_modified_time: ActiveValue::set(now),
+                ..Default::default()
+            }).into_active_model()
+                .update(db)
+                .await
+                .map(|_| ())
+                .context("Post::update")
+        }
+    );
+
+    def_fn!(
+        reply(db, id: u32, new_comment: NewComment, reply_to: Option<u32>) -> u32 {
+            Comment::insert(db, id, new_comment, reply_to).await.context("Post::reply")
+        }
+    );
+}
+
+impl PostModel {
     #[inline]
-    pub async fn query_all(rb: &Rbatis) -> anyhow::Result<Vec<Self>> {
-        rb.fetch_list().await.map_err(Into::into)
+    pub async fn refresh(&mut self, db: &DbConn) -> anyhow::Result<()> {
+        *self = Post::find_one(db, self.id).await?.unwrap();
+        Ok(())
     }
 
     #[inline]
-    pub async fn remove_by_id(
-        rb: &Rbatis,
-        id: u64,
+    pub async fn delete(self, db: &DbConn) -> anyhow::Result<()> {
+        Post::delete(db, self.id).await
+    }
+
+    #[inline]
+    pub async fn update(
+        &self,
+        db: &DbConn,
+        title: Option<String>,
+        content: Option<String>,
     ) -> anyhow::Result<()> {
-        rb.remove_by_column::<Self, _>("id", &id).await?;
-        Ok(())
+        Post::update(db, self.id, title, content).await
     }
 
     #[inline]
-    pub async fn remove(self, rb: &Rbatis) -> anyhow::Result<()> {
-        Self::remove_by_id(rb, self.id).await?;
-        Ok(())
-    }
-
-    #[inline]
-    pub async fn select(rb: &Rbatis, id: u64) -> anyhow::Result<Self> {
-        rb.fetch_by_column("id", &id).await.map_err(Into::into)
-    }
-
-    pub async fn insert<S1, S2>(
-        rb: &Rbatis,
-        new_post: NewPost<S1, S2>,
-    ) -> anyhow::Result<Self>
-    where
-        S1: Into<CompactStr> + Clone,
-        S2: Into<CompactStr> + Clone,
-    {
-        let mut tx = rb.acquire_begin().await?;
-
-        let now_time = NaiveDateTime::now();
-
-        let last_id = tx
-            .save(
-                &Posts {
-                    id: 0,
-                    title: new_post.title.into(),
-                    content: new_post.content.into(),
-                    create_time: now_time,
-                    last_modified_time: now_time,
-                },
-                &[Skip::Column("id")],
-            )
-            .await?
-            .last_insert_id
-            .unwrap();
-        let post = tx.fetch_by_column("id", &last_id).await?;
-        tx.commit().await?;
-        Ok(post)
-    }
-
-    pub async fn update_by_id<S1, S2>(
-        rb: &Rbatis,
-        id: u64,
-        new_post: NewPost<S1, S2>,
-    ) -> anyhow::Result<NaiveDateTime>
-    where
-        S1: Into<CompactStr> + Clone,
-        S2: Into<CompactStr> + Clone,
-    {
-        let w = rb.new_wrapper().eq("id", id);
-        let now_time = NaiveDateTime::now();
-        rb.update_by_wrapper(
-            &Posts {
-                id,
-                title: new_post.title.into(),
-                content: new_post.content.into(),
-                create_time: now_time,
-                last_modified_time: now_time,
-            },
-            w,
-            &[
-                Skip::Value(serde_json::Value::Null),
-                Skip::Column("id"),
-                Skip::Column("create_time"),
-            ],
-        )
-        .await?;
-
-        Ok(now_time)
-    }
-
-    pub async fn update<S1, S2>(
-        &mut self,
-        rb: &Rbatis,
-        id: u64,
-        new_post: NewPost<S1, S2>,
-    ) -> anyhow::Result<()>
-    where
-        S1: Into<CompactStr> + Clone,
-        S2: Into<CompactStr> + Clone,
-    {
-        let update_time =
-            Self::update_by_id(rb, id, new_post.clone()).await?;
-        self.title = new_post.title.into();
-        self.content = new_post.content.into();
-        self.last_modified_time = update_time;
-        Ok(())
-    }
-
-    #[inline]
-    pub async fn reply<S1, S2, S3>(
+    pub async fn reply<C>(
         &self,
-        rb: &Rbatis,
-        new_comment: NewComment<S1, S2, S3>,
-        reply_to: Option<u64>,
-    ) -> anyhow::Result<Comments>
+        db: &DbConn,
+        new_comment: NewComment,
+        reply_to: Option<C>,
+    ) -> anyhow::Result<u32>
     where
-        S1: Into<CompactStr> + Clone,
-        S2: Into<CompactStr> + Clone,
-        S3: Into<CompactStr> + Clone,
+        C: AsCommentId,
     {
-        Comments::insert(rb, self.id, new_comment, reply_to).await
-    }
-
-    #[inline]
-    pub async fn query_comments(
-        &self,
-        rb: &Rbatis,
-    ) -> anyhow::Result<Vec<Comments>> {
-        rb.fetch_list_by_wrapper(
-            rb.new_wrapper().eq("post_id", self.id),
+        Post::reply(
+            db,
+            self.id,
+            new_comment,
+            reply_to.map(|c| c.as_comment_id()),
         )
         .await
-        .map_err(Into::into)
     }
 }
