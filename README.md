@@ -1,5 +1,7 @@
 # maop
 
+[![Check](https://github.com/juzi5201314/maop/actions/workflows/ci.yaml/badge.svg)](https://github.com/juzi5201314/maop/actions/workflows/ci.yaml)
+
 一个旨在简洁但功能强大的个人博客程序
 
 ## 设计宗旨
