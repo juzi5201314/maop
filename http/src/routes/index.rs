@@ -15,20 +15,8 @@ use crate::error::HttpError;
 use crate::login_status::LoginStatus;
 
 pub fn routes() -> Router<BoxRoute> {
-    let index =
-        match config::get_config_temp().render().default_render() {
-            config::RenderStrategy::SSR => {
-                Router::new().route("/", get(index_ssr)).boxed()
-            }
-            config::RenderStrategy::CSR => {
-                Router::new().route("/", get(index_csr)).boxed()
-            }
-        };
-
-    let router = index
-        .route("/api", get(index_api))
-        .route("/ssr", get(index_ssr))
-        .route("/csr", get(index_csr));
+    let router = Router::new().route("/", get(index_ssr))
+        .route("/api", get(index_api));
 
     router.boxed()
 }
@@ -39,10 +27,6 @@ pub async fn index_ssr<'a>(
     Extension(tm): Extension<Arc<template::TemplateManager<'a>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("index", &data).map(Html).map_err(Into::into)
-}
-
-pub async fn index_csr() -> &'static str {
-    "Hello, World!"
 }
 
 pub async fn index_api(data: Data) -> Result<Json<Data>, HttpError> {

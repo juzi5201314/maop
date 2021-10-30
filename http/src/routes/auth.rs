@@ -24,20 +24,10 @@ use crate::session_store::SessionStore;
 pub type Password = Option<String>;
 
 pub fn routes() -> Router<BoxRoute> {
-    let index = match config::get_config_temp().render().default_render() {
-        config::RenderStrategy::SSR => Router::new()
-            .route("/", post(login).get(index_ssr))
-            .boxed(),
-        config::RenderStrategy::CSR => Router::new()
-            .route("/", post(login).get(index_csr))
-            .boxed(),
-    };
-
-    let router = index
+    let router = Router::new()
+        .route("/", post(login).get(index_ssr))
         .route("/logout", post(logout))
-        .route("/api", get(index_api))
-        .route("/ssr", get(index_ssr))
-        .route("/csr", get(index_csr));
+        .route("/api", get(index_api));
 
     router.boxed()
 }
@@ -50,10 +40,6 @@ async fn index_ssr<'reg>(
     tm.render("auth", &data)
         .map(Html)
         .map_err(Into::into)
-}
-
-async fn index_csr() -> &'static str {
-    "Hello, World!"
 }
 
 async fn index_api(data: Data) -> Result<Json<Data>, HttpError> {

@@ -24,7 +24,6 @@ type = "http"
 session_expiry = "30d"
 
 [render]
-default_render = "ssr"
 strict_mode = true
 dev_mode = false
 

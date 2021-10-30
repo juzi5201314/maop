@@ -1,37 +1,27 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::body::Body;
 use axum::extract::{Extension, FromRequest, RequestParts};
 use axum::handler::get;
 use axum::http::StatusCode;
-use axum::response::Html;use anyhow::Context;
+use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
 use sea_orm::prelude::DbConn;
 
 use config::SiteConfig;
 use database::models::comment::CommentModel;
-use database::models::post::{PostModel, Post};
+use database::models::post::{Post, PostModel};
 
 use crate::error::HttpError;
 use crate::login_status::LoginStatus;
 
 pub fn routes() -> Router<BoxRoute> {
-    let index =
-        match config::get_config_temp().render().default_render() {
-            config::RenderStrategy::SSR => {
-                Router::new().route("/", get(index_ssr)).boxed()
-            }
-            config::RenderStrategy::CSR => {
-                Router::new().route("/", get(index_csr)).boxed()
-            }
-        };
-
-    let router = index
-        .route("/api", get(index_api))
-        .route("/ssr", get(index_ssr))
-        .route("/csr", get(index_csr));
+    let router = Router::new()
+        .route("/", get(index_ssr))
+        .route("/api", get(index_api));
 
     router.boxed()
 }
@@ -42,10 +32,6 @@ pub async fn index_ssr<'reg>(
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("post", &data).map(Html).map_err(Into::into)
-}
-
-pub async fn index_csr() -> &'static str {
-    "Hello, World!"
 }
 
 pub async fn index_api(data: Data) -> Result<Json<Data>, HttpError> {

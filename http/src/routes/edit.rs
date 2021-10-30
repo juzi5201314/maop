@@ -20,35 +20,16 @@ use anyhow::Context;
 use crate::login_status::Logged;
 
 pub fn routes_post() -> Router<BoxRoute> {
-    let index =
-        match config::get_config_temp().render().default_render() {
-            config::RenderStrategy::SSR => Router::new()
-                .route(
-                    "/:id",
-                    get(index_ssr_edit_post)
-                        .post(update_post)
-                        .delete(delete_post),
-                )
-                .route("/", get(index_ssr_new_post).post(new_post))
-                .boxed(),
-            config::RenderStrategy::CSR => Router::new()
-                .route(
-                    "/:id",
-                    get(index_csr_edit_post)
-                        .post(update_post)
-                        .delete(delete_post),
-                )
-                .route("/", get(index_csr_new_post).post(new_post))
-                .boxed(),
-        };
-
-    let router = index
+    let router = Router::new()
+        .route(
+            "/:id",
+            get(index_ssr_edit_post)
+                .post(update_post)
+                .delete(delete_post),
+        )
+        .route("/", get(index_ssr_new_post).post(new_post))
         .route("/:id/api", get(index_api_edit_post))
-        .route("/:id/ssr", get(index_ssr_edit_post))
-        .route("/:id/csr", get(index_csr_edit_post))
-        .route("/api", get(index_api_new_post))
-        .route("/ssr", get(index_ssr_new_post))
-        .route("/csr", get(index_csr_new_post));
+        .route("/api", get(index_api_new_post));
 
     router.boxed()
 }
@@ -132,10 +113,6 @@ pub async fn index_ssr_new_post<'reg>(
     tm.render("edit", &data).map(Html).map_err(Into::into)
 }
 
-pub async fn index_csr_new_post() -> &'static str {
-    "Hello, World!"
-}
-
 pub async fn index_api_new_post(
     _: Logged,
     data: NewPostData,
@@ -169,10 +146,6 @@ pub async fn index_ssr_edit_post<'reg>(
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
     tm.render("edit", &data).map(Html).map_err(Into::into)
-}
-
-pub async fn index_csr_edit_post() -> &'static str {
-    "Hello, World!"
 }
 
 pub async fn index_api_edit_post(
