@@ -16,7 +16,7 @@ use database::models::comment::{Comment, CommentModel, NewComment};
 use database::models::post::{NewPost, Post, PostModel};
 
 use crate::error::HttpError;
-use crate::error::HttpServerError;
+use anyhow::Context;
 use crate::login_status::Logged;
 
 pub fn routes_post() -> Router<BoxRoute> {
@@ -202,7 +202,7 @@ impl FromRequest for EditPostData {
         let Extension(db): Extension<Arc<DbConn>> =
             Extension::from_request(req)
                 .await
-                .server_error("`DbConn` extension missing")?;
+                .context("`DbConn` extension missing")?;
         let site = config::get_config_temp().site().clone();
 
         let post_and_comments = Post::find_and_commit(&*db, post_id)

@@ -11,11 +11,12 @@ use axum::routing::BoxRoute;
 use axum::{Json, Router};
 use compact_str::CompactStr;
 use hyper::StatusCode;
+use anyhow::Context;
 
 use config::SiteConfig;
 use utils::password_hash::password_verify;
 
-use crate::error::{HttpError, HttpServerError};
+use crate::error::HttpError;
 use crate::login_status::LoginStatus;
 use crate::session::Session;
 use crate::session_store::SessionStore;
@@ -96,7 +97,7 @@ pub async fn login(
     } else if !matches!(login_status, LoginStatus::Logged) {
         let password = (&*password).as_ref().unwrap();
         resp = if password_verify(data.password.as_bytes(), password)
-            .server_error("failed to verify password")?
+            .context("failed to verify password")?
         {
             session
                 .insert("login_status", LoginStatus::Logged)
@@ -107,7 +108,7 @@ pub async fn login(
             let cookie = store
                 .store_session(session.into())
                 .await
-                .server_error("failed to store session")?;
+                .context("failed to store session")?;
 
             resp.header(
                 SET_COOKIE,
@@ -139,7 +140,7 @@ pub async fn logout(
             store
                 .destroy_session(session.into())
                 .await
-                .server_error("destroy session failed")?;
+                .context("destroy session failed")?;
             resp.status(StatusCode::OK)
         }
     }

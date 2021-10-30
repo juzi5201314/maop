@@ -1,11 +1,10 @@
+use crate::cookies::Cookies;
+use crate::error::HttpError;
+use crate::session_store::SessionStore;
+use anyhow::Context;
 use async_session::SessionStore as _;
 use axum::extract::{Extension, FromRequest, RequestParts};
 use std::ops::{Deref, DerefMut};
-
-use crate::cookies::Cookies;
-use crate::error::HttpError;
-use crate::error::HttpServerError;
-use crate::session_store::SessionStore;
 
 pub struct Session(async_session::Session);
 
@@ -22,7 +21,7 @@ where
         let Extension(store): Extension<SessionStore> =
             Extension::<SessionStore>::from_request(req)
                 .await
-                .server_error("`SessionStore` extension missing")?;
+                .context("`SessionStore` extension missing")?;
         let cookie = Cookies::from_request(req)
             .await?
             .0
@@ -33,7 +32,7 @@ where
                 store
                     .load_session(cookie)
                     .await
-                    .server_error("Failed to parse the session. Please clear the cookies")?
+                    .context("Failed to parse the session. Please clear the cookies")?
                     .map(|s| s.validate())
             } else {
                 None

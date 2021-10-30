@@ -5,7 +5,7 @@ use axum::body::Body;
 use axum::extract::{Extension, FromRequest, RequestParts};
 use axum::handler::get;
 use axum::http::StatusCode;
-use axum::response::Html;
+use axum::response::Html;use anyhow::Context;
 use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
 use sea_orm::prelude::DbConn;
@@ -15,7 +15,6 @@ use database::models::comment::CommentModel;
 use database::models::post::{PostModel, Post};
 
 use crate::error::HttpError;
-use crate::error::HttpServerError;
 use crate::login_status::LoginStatus;
 
 pub fn routes() -> Router<BoxRoute> {
@@ -75,7 +74,7 @@ impl FromRequest for Data {
         let Extension(db): Extension<Arc<DbConn>> =
             Extension::<Arc<DbConn>>::from_request(req)
                 .await
-                .server_error("`DbConn` extension missing")?;
+                .context("`DbConn` extension missing")?;
         let site = config::get_config_temp().site().clone();
 
         let post_and_comments = Post::find_and_commit(&*db, post_id)

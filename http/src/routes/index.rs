@@ -6,13 +6,12 @@ use axum::handler::get;
 use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{Json, Router};
-use sea_orm::prelude::DbConn;
+use sea_orm::prelude::DbConn;use anyhow::Context;
 
 use config::SiteConfig;
 use database::models::post::{Post, PostModel};
 
 use crate::error::HttpError;
-use crate::error::HttpServerError;
 use crate::login_status::LoginStatus;
 
 pub fn routes() -> Router<BoxRoute> {
@@ -69,7 +68,7 @@ impl FromRequest for Data {
         let Extension(db): Extension<Arc<DbConn>> =
             Extension::<Arc<DbConn>>::from_request(req)
                 .await
-                .server_error("`DbConn` extension missing")?;
+                .context("`DbConn` extension missing")?;
         let site = config::get_config_temp().site().clone();
         Ok(Data {
             site,

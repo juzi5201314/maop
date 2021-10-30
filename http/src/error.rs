@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::convert::Infallible;
-use std::fmt::Debug;
 
 use axum::body::{Bytes, Full};
 use axum::extract::rejection::PathParamsRejection;
@@ -74,34 +73,6 @@ impl From<headers::Error> for HttpError {
         HttpError {
             code: StatusCode::INTERNAL_SERVER_ERROR,
             msg: err.to_string().into(),
-        }
-    }
-}
-
-pub trait HttpServerError<T> {
-    fn server_error<S>(self, msg: S) -> Result<T, HttpError>
-    where
-        S: AsRef<str>;
-}
-
-impl<T, E> HttpServerError<T> for Result<T, E>
-where
-    E: Debug,
-{
-    fn server_error<S>(self, msg: S) -> Result<T, HttpError>
-    where
-        S: AsRef<str>,
-    {
-        match self {
-            Ok(t) => Ok(t),
-            Err(err) => Err(HttpError {
-                code: StatusCode::INTERNAL_SERVER_ERROR,
-                msg: Cow::Owned(format!(
-                    "{}: {:?}",
-                    msg.as_ref(),
-                    err
-                )),
-            }),
         }
     }
 }
