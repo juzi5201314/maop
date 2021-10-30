@@ -1,7 +1,9 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fs::{
     create_dir, create_dir_all, remove_dir_all, remove_file,
 };
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -40,7 +42,7 @@ impl FileStore {
             .create(true)
             .write(true)
             .truncate(true)
-            .open(self.path.join(session.id()))
+            .open(self.path.join(FileStore::id_hash(session.id())))
             .await?;
         file.write_all(&bincode::serialize(session)?).await?;
         file.sync_data().await?;
@@ -51,7 +53,7 @@ impl FileStore {
         &self,
         session_id: &str,
     ) -> anyhow::Result<Option<Session>> {
-        let path = self.path.join(session_id);
+        let path = self.path.join(FileStore::id_hash(session_id));
         Ok(if path.exists() {
             let mut file: File =
                 OpenOptions::new().read(true).open(path).await?;
@@ -61,6 +63,12 @@ impl FileStore {
         } else {
             None
         })
+    }
+
+    fn id_hash(id: &str) -> String {
+        let mut hasher = DefaultHasher::default();
+        id.hash(&mut hasher);
+        hasher.finish().to_string()
     }
 }
 
@@ -102,7 +110,9 @@ impl AsyncSessionStore for FileStore {
         session: Session,
     ) -> async_session::Result {
         self.cache.lock().await.remove(session.id());
-        remove_file(self.path.join(session.id()))?;
+        remove_file(
+            self.path.join(FileStore::id_hash(session.id())),
+        )?;
         Ok(())
     }
 
