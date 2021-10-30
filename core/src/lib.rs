@@ -1,5 +1,7 @@
 #![feature(result_flattening)]
 
+use std::process::exit;
+
 use futures::FutureExt;
 use futures::TryFutureExt;
 use tokio::runtime::Builder;
@@ -13,40 +15,55 @@ mod prof;
 #[global_allocator]
 static GLOBAL: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 
+#[cfg(all(feature = "tokio-console", not(tokio_unstable)))]
+compile_error!("the `tokio_unstable` cfg must be enabled");
+
 pub fn run(configs: Vec<String>, no_password: bool) {
     #[cfg(feature = "prof")]
     let guard = prof::start();
+
     config::init(configs.into_iter().map(|s| s.into()).collect())
         .expect("config error");
 
-    let config = config::get_config_temp().runtime().clone();
+    let rt_config = config::get_config_temp().runtime().clone();
 
     let mut builder = Builder::new_multi_thread();
 
     builder.enable_all();
 
-    if let Some(num) = config.worker_threads() {
+    if let Some(num) = rt_config.worker_threads() {
         builder.worker_threads(*num);
     }
 
-    if let Some(bytes) = config.thread_stack_size() {
+    if let Some(bytes) = rt_config.thread_stack_size() {
         builder.thread_stack_size(bytes.get_bytes() as usize);
     }
 
-    if let Some(time) = config.blocking_thread_keep_alive() {
+    if let Some(time) = rt_config.blocking_thread_keep_alive() {
         builder.thread_keep_alive(*time.duration());
     }
 
-    if let Some(num) = config.max_blocking_threads() {
+    if let Some(num) = rt_config.max_blocking_threads() {
         builder.max_blocking_threads(*num);
     }
 
     let rt = builder.build().unwrap();
 
-    let shutdown_timeout = *config.shutdown_timeout().duration();
+    let shutdown_timeout = *rt_config.shutdown_timeout().duration();
 
     rt.block_on(async move {
         logger::init();
+
+        #[cfg(feature = "tokio-console")]
+            {
+                use tracing_subscriber::util::SubscriberInitExt;
+                if *config::get_config_temp().log().level() == log::Level::Trace {
+                    println!("tokio-console does not allow `trace` level");
+                    exit(1);
+                } else {
+                    console_subscriber::build().try_init().ok();
+                }
+            }
 
         let join_handle = tokio::spawn(async move {
             if no_password {
@@ -69,7 +86,8 @@ pub fn run(configs: Vec<String>, no_password: bool) {
         .await
         .is_err()
         {
-            eprintln!("shutdown timeout");
+            println!("shutdown timeout");
+            exit(1);
         }
     });
 
