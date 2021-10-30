@@ -270,6 +270,7 @@ macro_rules! accuracy_test_in_situ_m {
     };
 }
 
+#[ignore]
 #[tokio::test]
 async fn test() {
     use crossbeam_utils::atomic::AtomicCell;
