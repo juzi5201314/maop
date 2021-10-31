@@ -1,8 +1,9 @@
 #![feature(box_syntax)]
 
+use crossbeam_queue::SegQueue;
+use crossbeam_utils::atomic::AtomicCell;
 use std::fmt::{Debug, Formatter};
 use std::time::Duration;
-use crossbeam_queue::SegQueue;
 
 use futures::future::BoxFuture;
 use tokio::time::MissedTickBehavior;
@@ -23,7 +24,9 @@ pub struct Task<'a> {
 
 enum TaskType<'a> {
     Delay(BoxFuture<'a, ()>),
-    Interval(Box<dyn Fn() -> BoxFuture<'a, Follow> + Send + Sync + 'a>),
+    Interval(
+        Box<dyn Fn() -> BoxFuture<'a, Follow> + Send + Sync + 'a>,
+    ),
 }
 
 unsafe impl<'a> Sync for TaskType<'a> {}
@@ -32,12 +35,15 @@ unsafe impl<'a> Sync for TaskType<'a> {}
 pub struct Wheel<'a> {
     slots: Vec<Slot<'a>>,
     capacity: usize,
-    index: usize,
+    index: AtomicCell<usize>,
     granularity: Duration,
     next_wheel: Option<Box<Wheel<'a>>>,
     missed_tick_behavior: MissedTickBehavior,
-    add_queue: SegQueue<Task<'a>>
+    running: AtomicCell<bool>,
 }
+
+unsafe impl<'a> Send for Wheel<'a> {}
+unsafe impl<'a> Sync for Wheel<'a> {}
 
 #[derive(Debug)]
 pub struct TaskWrapper<'a> {
@@ -47,7 +53,7 @@ pub struct TaskWrapper<'a> {
 
 #[derive(Default, Debug)]
 pub struct Slot<'a> {
-    tasks: Vec<TaskWrapper<'a>>,
+    tasks: SegQueue<TaskWrapper<'a>>,
 }
 
 impl<'a> Wheel<'a> {
@@ -80,14 +86,12 @@ impl<'a> Wheel<'a> {
         self
     }
 
-    pub fn add_task_non_blocking(&self, task: Task<'a>) {
-        self.add_queue.push(task)
-    }
-
-    pub fn add_task(&mut self, mut task: Task<'a>) {
+    pub fn add_task(&self, mut task: Task<'a>) {
         let slot_count = (task.time.as_millis()
             / self.granularity.as_millis())
             as usize;
+
+        let index = self.index.load();
 
         let (mut slot_index, round) = if slot_count > self.capacity {
             if let Some(wheel) = &self
@@ -111,12 +115,12 @@ impl<'a> Wheel<'a> {
                     slot_index += 1;
                 }
 
-                (slot_index + self.index, round)
+                (slot_index + index, round)
             }
         } else if slot_count == 0 {
-            (self.index + 1, 0)
+            (index + 1, 0)
         } else {
-            let slot_index = self.index + slot_count;
+            let slot_index = index + slot_count;
             (slot_index, 0)
         };
 
@@ -124,31 +128,24 @@ impl<'a> Wheel<'a> {
             slot_index -= self.capacity
         }
 
-        let slot: &mut Slot = unsafe {
-            self.slots.get_unchecked_mut(slot_index as usize)
-        };
+        let slot: &Slot =
+            unsafe { self.slots.get_unchecked(slot_index as usize) };
         slot.tasks.push(TaskWrapper { task, round });
     }
 
-    #[async_recursion::async_recursion(?Send)]
-    pub async fn roll(&mut self) {
-        if !self.add_queue.is_empty() {
-            while let Some(mut task) = self.add_queue.pop() {
-                self.add_task(task)
-            }
-        }
-
+    #[async_recursion::async_recursion]
+    pub async fn roll(&self) {
         let roll_next = self.next_index();
         self.do_tasks().await;
         if roll_next {
-            if let Some(wheel) = &mut self.next_wheel {
+            if let Some(wheel) = &self.next_wheel {
                 wheel.roll().await;
             }
         }
     }
 
-    async fn do_tasks(&mut self) {
-        let tasks = &mut self.slots[self.index].tasks;
+    async fn do_tasks(&self) {
+        let tasks = &self.slots[self.index.load()].tasks;
         if tasks.is_empty() {
             return;
         }
@@ -163,7 +160,7 @@ impl<'a> Wheel<'a> {
             } else if wrapper.task.to_next {
                 wrapper.task.to_next = false;
                 self.next_wheel
-                    .as_mut()
+                    .as_ref()
                     .unwrap()
                     .add_task(wrapper.task);
             } else {
@@ -189,23 +186,26 @@ impl<'a> Wheel<'a> {
                 }
             }
         }
-        tasks.extend(no_run_tasks);
+        no_run_tasks.into_iter().for_each(|task| tasks.push(task));
         interval_tasks
             .into_iter()
             .for_each(|task| self.add_task(task));
     }
 
-    fn next_index(&mut self) -> bool {
-        if self.index == self.capacity - 1 {
-            self.index = 0;
+    fn next_index(&self) -> bool {
+        if self.index.compare_exchange(self.capacity - 1, 0).is_ok() {
             true
         } else {
-            self.index += 1;
+            self.index.fetch_add(1);
             false
         }
     }
 
-    pub async fn run(mut self) {
+    pub async fn run(&self) {
+        if self.running.swap(true) {
+            return;
+        }
+
         let mut timer = tokio::time::interval(self.granularity);
         timer.set_missed_tick_behavior(self.missed_tick_behavior);
         timer.tick().await;
@@ -293,7 +293,7 @@ async fn test() {
 
     use std::time::Instant;
 
-    let mut wheel = Wheel::new(10)
+    let wheel = Wheel::new(10)
         .granularity(Duration::from_millis(10))
         .next_wheel(
             Wheel::new(10)
@@ -308,7 +308,7 @@ async fn test() {
         Duration::from_millis(50),
         5
     ));
-    wheel.add_task_non_blocking(accuracy_test_in_situ_m!(
+    wheel.add_task(accuracy_test_in_situ_m!(
         Duration::from_millis(500),
         5
     ));
