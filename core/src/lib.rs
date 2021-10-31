@@ -65,6 +65,8 @@ pub fn run(configs: Vec<String>, no_password: bool) {
                 }
             }
 
+        utils::task::spawn(global_resource::TIME_WHEEL.run(), "timer");
+
         let join_handle = utils::task::spawn(async move {
             if no_password {
                 log::warn!("you are running in no-password mode");
