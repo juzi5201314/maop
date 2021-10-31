@@ -33,9 +33,15 @@ impl FileStore {
         P: AsRef<Path>,
     {
         create_dir_all(path.as_ref())?;
-        FileStore::regularly_check_expired(path.as_ref());
+
+        let cache = Arc::new(Mutex::new(HashMap::new()));
+        FileStore::regularly_check_expired(
+            path.as_ref(),
+            Arc::clone(&cache),
+        );
+
         Ok(FileStore {
-            cache: Arc::new(Mutex::new(HashMap::new())),
+            cache,
             path: path.as_ref().to_path_buf(),
         })
     }
@@ -68,14 +74,18 @@ impl FileStore {
         })
     }
 
-    fn regularly_check_expired(path: &Path) {
+    fn regularly_check_expired(
+        path: &Path,
+        cache: Arc<Mutex<HashMap<CompactStr, Session>>>,
+    ) {
         let path = path.to_path_buf();
         global_resource::TIME_WHEEL.add_task(Task::interval(
             move || {
                 log::debug!("checking for expired session");
 
                 let path = path.clone();
-                Box::pin(async {
+                let cache = Arc::clone(&cache);
+                Box::pin(async move {
                     if let Result::<(), anyhow::Error>::Err(err) = try {
                         for dir_entry in read_dir(path)? {
                             let dir = dir_entry?.path();
@@ -90,6 +100,7 @@ impl FileStore {
                                 remove_file(
                                     &dir,
                                 )?;
+                                cache.lock().await.remove(session.id());
                                 log::info!("Deleted the expired session: {}", dir.display());
                             }
                         }
