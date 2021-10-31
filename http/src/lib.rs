@@ -1,5 +1,6 @@
 #![feature(decl_macro)]
 #![feature(never_type)]
+#![feature(try_blocks)]
 
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;

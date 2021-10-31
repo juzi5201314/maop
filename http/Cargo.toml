@@ -13,6 +13,7 @@ config = { path = "../config" }
 logger = { path = "../logger" }
 template = { path = "../template" }
 global-resource = { path = "../global-resource" }
+timer = { path = "../timer" }
 
 tokio = { version = "1", features = ["full"] }
 serde_json = "1.0"

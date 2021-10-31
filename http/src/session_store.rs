@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fs::{
-    create_dir, create_dir_all, remove_dir_all, remove_file,
+    create_dir, create_dir_all, read_dir, remove_dir_all, remove_file,
 };
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
@@ -12,6 +12,8 @@ use compact_str::CompactStr;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
+
+use timer::{Follow, Task};
 
 #[cfg(not(feature = "session_store_rocksdb"))]
 pub type SessionStore = FileStore;
@@ -31,6 +33,7 @@ impl FileStore {
         P: AsRef<Path>,
     {
         create_dir_all(path.as_ref())?;
+        FileStore::regularly_check_expired(path.as_ref());
         Ok(FileStore {
             cache: Arc::new(Mutex::new(HashMap::new())),
             path: path.as_ref().to_path_buf(),
@@ -63,6 +66,42 @@ impl FileStore {
         } else {
             None
         })
+    }
+
+    fn regularly_check_expired(path: &Path) {
+        let path = path.to_path_buf();
+        global_resource::TIME_WHEEL.add_task(Task::interval(
+            move || {
+                log::debug!("checking for expired session");
+
+                let path = path.clone();
+                Box::pin(async {
+                    if let Result::<(), anyhow::Error>::Err(err) = try {
+                        for dir_entry in read_dir(path)? {
+                            let dir = dir_entry?.path();
+
+                            let mut file: File =
+                                OpenOptions::new().read(true).open(&dir).await?;
+                            let mut data = Vec::with_capacity(200);
+                            file.read_to_end(&mut data).await?;
+
+                            let session = bincode::deserialize::<Session>(&*data)?;
+                            if session.is_expired() {
+                                remove_file(
+                                    &dir,
+                                )?;
+                                log::info!("Deleted the expired session: {}", dir.display());
+                            }
+                        }
+                    } {
+                        log::error!("regularly_check_expired: {:?}", err);
+                    }
+
+                    Follow::Done
+                })
+            },
+            *config::get_config_temp().http().overdue_check_interval().duration(),
+        ));
     }
 
     fn id_hash(id: &str) -> String {
@@ -132,6 +171,8 @@ mod rocksdb {
     use async_session::{Session, SessionStore};
     use rocksdb::{IteratorMode, Options, DB};
 
+    use timer::{Follow, Task};
+
     #[derive(Debug, Clone)]
     pub struct RocksdbStore {
         inner: Arc<DB>,
@@ -142,20 +183,51 @@ mod rocksdb {
         where
             P: AsRef<Path>,
         {
-            Ok(RocksdbStore {
-                inner: Arc::new(DB::open(
-                    &{
-                        let mut opt = Options::default();
-                        opt.create_if_missing(true);
-                        opt.set_keep_log_file_num(100);
-                        opt.set_max_log_file_size(1024 ^ 2);
-                        opt.set_recycle_log_file_num(100);
-                        opt.create_missing_column_families(true);
-                        opt
-                    },
-                    path,
-                )?),
-            })
+            let inner = Arc::new(DB::open(
+                &{
+                    let mut opt = Options::default();
+                    opt.create_if_missing(true);
+                    opt.set_keep_log_file_num(100);
+                    opt.set_max_log_file_size(1024 ^ 2);
+                    opt.set_recycle_log_file_num(100);
+                    opt.create_missing_column_families(true);
+                    opt
+                },
+                path,
+            )?);
+            RocksdbStore::regularly_check_expired(
+                path.as_ref(),
+                &inner,
+            );
+            Ok(RocksdbStore { inner })
+        }
+
+        fn regularly_check_expired(path: &Path, db: &Arc<DB>) {
+            let path = path.to_path_buf();
+            global_resource::TIME_WHEEL.add_task(Task::interval(
+                move || {
+                    log::debug!("checking for expired session");
+
+                    let path = path.clone();
+                    let db = Arc::clone(&db);
+                    Box::pin(async {
+                        if let Result::<(), anyhow::Error>::Err(err) = try {
+                            for (key, val) in db.full_iterator(IteratorMode::Start)
+                            {
+                                let session = bincode::deserialize::<Session>(&val)?;
+                                if session.is_expired() {
+                                    db.delete(key)?;
+                                    log::info!("Deleted the expired session: {}", session.id());
+                                }
+                            }
+                        } {
+                            log::error!("regularly_check_expired: {:?}", err);
+                        }
+                        Follow::Done
+                    })
+                },
+                *config::get_config_temp().http().overdue_check_interval().duration(),
+            ));
         }
     }
 

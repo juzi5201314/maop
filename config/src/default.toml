@@ -21,7 +21,8 @@ page_size = 4096
 bind = "127.0.0.1"
 port = "7474"
 type = "http"
-session_expiry = "30d"
+session_expiry = "7d"
+overdue_check_interval = "5h"
 
 [render]
 strict_mode = true
