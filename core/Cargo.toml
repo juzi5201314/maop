@@ -11,6 +11,7 @@ config = { path = "../config" }
 logger = { path = "../logger" }
 http = { path = "../http" }
 utils  = { path = "../utils" }
+global-resource = { path = "../global-resource" }
 
 anyhow = "1.0"
 tokio = { version = "1", features = ["full", "parking_lot"] }

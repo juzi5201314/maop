@@ -620,6 +620,7 @@ dependencies = [
  "config 0.1.0",
  "console-subscriber",
  "futures",
+ "global-resource",
  "http 0.1.0",
  "log",
  "logger",
@@ -1188,6 +1189,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
+name = "global-resource"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "timer",
+ "utils",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1331,6 +1341,7 @@ dependencies = [
  "compact_str",
  "config 0.1.0",
  "database",
+ "global-resource",
  "headers",
  "hyper",
  "hyperlocal",
@@ -1741,6 +1752,7 @@ dependencies = [
  "config 0.1.0",
  "crossfire",
  "futures",
+ "global-resource",
  "log",
  "once_cell",
  "serde 1.0.130",
@@ -3798,6 +3810,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "byte-unit",
+ "cfg-if 1.0.0",
  "chrono",
  "compact_str",
  "crossfire",

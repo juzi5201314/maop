@@ -6,7 +6,7 @@ use futures::FutureExt;
 use futures::TryFutureExt;
 use tokio::runtime::Builder;
 
-use utils::SHUTDOWN_NOTIFY;
+use global_resource::SHUTDOWN_NOTIFY;
 
 #[cfg(feature = "prof")]
 mod prof;
@@ -65,12 +65,12 @@ pub fn run(configs: Vec<String>, no_password: bool) {
                 }
             }
 
-        let join_handle = tokio::spawn(async move {
+        let join_handle = utils::task::spawn(async move {
             if no_password {
                 log::warn!("you are running in no-password mode");
             }
             http::run_http_server(no_password).await
-        });
+        }, "http server");
 
         tokio::select! (
             res = join_handle.map(|x| x.map_err(Into::into).flatten()) => res,

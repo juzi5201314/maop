@@ -15,8 +15,8 @@ use cfg_if::cfg_if;
 use inquire::error::InquireError;
 use inquire::PasswordDisplayMode;
 
+use global_resource::SHUTDOWN_NOTIFY;
 use template::TemplateManager;
-use utils::SHUTDOWN_NOTIFY;
 
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};

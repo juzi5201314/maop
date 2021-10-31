@@ -16,7 +16,7 @@ use tokio::fs::{File, OpenOptions};
 use tokio::io::{stdout, AsyncWriteExt, Stdout};
 
 use config::get_config_temp;
-use utils::SHUTDOWN_NOTIFY;
+use global_resource::SHUTDOWN_NOTIFY;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
@@ -90,27 +90,30 @@ impl Logger {
     }
 
     fn start(rx: mpsc::RxFuture<Record, SharedSenderBRecvF>) {
-        tokio::spawn(async move {
-            let mut context = Context {
-                stdout: stdout(),
-                file: None,
-            };
-            let wait_handle = SHUTDOWN_NOTIFY.register(1).await;
-
-            loop {
-                futures::select_biased! {
-                    _ = Logger::process(&mut context, &rx).fuse() => {},
-                    resp = wait_handle.wait().fuse() => {
-                        while !rx.is_empty() {
-                            Logger::process(&mut context, &rx).await;
-                        }
-
-                        resp.ready();
-                        break
-                    },
+        utils::task::spawn(
+            async move {
+                let mut context = Context {
+                    stdout: stdout(),
+                    file: None,
                 };
-            }
-        });
+                let wait_handle = SHUTDOWN_NOTIFY.register(1).await;
+
+                loop {
+                    futures::select_biased! {
+                        _ = Logger::process(&mut context, &rx).fuse() => {},
+                        resp = wait_handle.wait().fuse() => {
+                            while !rx.is_empty() {
+                                Logger::process(&mut context, &rx).await;
+                            }
+
+                            resp.ready();
+                            break
+                        },
+                    };
+                }
+            },
+            "logger",
+        );
     }
 
     async fn process(

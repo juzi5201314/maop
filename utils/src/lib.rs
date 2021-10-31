@@ -1,15 +1,10 @@
-use once_cell::sync::Lazy;
 pub use simple_i18n::{i18n, lang};
-
-use crate::notify::Notify;
 
 pub mod markdown;
 pub mod notify;
 pub mod password_hash;
+pub mod task;
 pub mod unit;
-
-pub static SHUTDOWN_NOTIFY: Lazy<Notify> =
-    Lazy::new(Default::default);
 
 #[macro_export]
 macro_rules! builder {
