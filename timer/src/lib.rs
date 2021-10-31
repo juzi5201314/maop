@@ -2,6 +2,7 @@
 
 use std::fmt::{Debug, Formatter};
 use std::time::Duration;
+use crossbeam_queue::SegQueue;
 
 use futures::future::BoxFuture;
 use tokio::time::MissedTickBehavior;
@@ -22,8 +23,10 @@ pub struct Task<'a> {
 
 enum TaskType<'a> {
     Delay(BoxFuture<'a, ()>),
-    Interval(Box<dyn Fn() -> BoxFuture<'a, Follow> + 'a>),
+    Interval(Box<dyn Fn() -> BoxFuture<'a, Follow> + Send + Sync + 'a>),
 }
+
+unsafe impl<'a> Sync for TaskType<'a> {}
 
 #[derive(Default, Debug)]
 pub struct Wheel<'a> {
@@ -33,6 +36,7 @@ pub struct Wheel<'a> {
     granularity: Duration,
     next_wheel: Option<Box<Wheel<'a>>>,
     missed_tick_behavior: MissedTickBehavior,
+    add_queue: SegQueue<Task<'a>>
 }
 
 #[derive(Debug)]
@@ -74,6 +78,10 @@ impl<'a> Wheel<'a> {
     pub fn next_wheel(mut self, next_wheel: Wheel<'a>) -> Self {
         self.next_wheel = Some(box next_wheel);
         self
+    }
+
+    pub fn add_task_non_blocking(&self, task: Task<'a>) {
+        self.add_queue.push(task)
     }
 
     pub fn add_task(&mut self, mut task: Task<'a>) {
@@ -124,6 +132,12 @@ impl<'a> Wheel<'a> {
 
     #[async_recursion::async_recursion(?Send)]
     pub async fn roll(&mut self) {
+        if !self.add_queue.is_empty() {
+            while let Some(mut task) = self.add_queue.pop() {
+                self.add_task(task)
+            }
+        }
+
         let roll_next = self.next_index();
         self.do_tasks().await;
         if roll_next {
@@ -213,7 +227,7 @@ impl<'a> Task<'a> {
 
     pub fn interval<F>(func: F, time: Duration) -> Self
     where
-        F: Fn() -> BoxFuture<'a, Follow> + 'a,
+        F: Fn() -> BoxFuture<'a, Follow> + Send + Sync + 'a,
     {
         Task {
             ty: TaskType::Interval(box func),
@@ -294,7 +308,7 @@ async fn test() {
         Duration::from_millis(50),
         5
     ));
-    wheel.add_task(accuracy_test_in_situ_m!(
+    wheel.add_task_non_blocking(accuracy_test_in_situ_m!(
         Duration::from_millis(500),
         5
     ));

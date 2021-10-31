@@ -3430,6 +3430,7 @@ name = "timer"
 version = "0.1.0"
 dependencies = [
  "async-recursion",
+ "crossbeam-queue 0.3.2",
  "crossbeam-utils 0.8.5",
  "futures",
  "once_cell",
