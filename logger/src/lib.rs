@@ -1,9 +1,12 @@
 #![feature(box_syntax)]
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::ops::Deref;
+use std::sync::Arc;
 
+use arc_swap::ArcSwap;
 use chrono::{DateTime, Local, NaiveDate, SecondsFormat};
 use colored::{ColoredString, Colorize};
 use compact_str::CompactStr;
@@ -20,12 +23,24 @@ use global_resource::SHUTDOWN_NOTIFY;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
+static LOGGER_FILTER: Lazy<ArcSwap<HashMap<CompactStr, Level>>> =
+    Lazy::new(|| {
+        ArcSwap::from_pointee(
+            config::get_config_temp().log().filter().clone(),
+        )
+    });
+
 /// 在这之前必须初始化config!!!
 pub fn init() {
     set_max_level();
     log::set_logger(LOGGER.deref()).unwrap();
 
     config::hook(box set_max_level);
+    config::hook(box || {
+        LOGGER_FILTER.store(Arc::new(
+            config::get_config_temp().log().filter().clone(),
+        ))
+    });
 }
 
 #[inline]
@@ -38,11 +53,8 @@ fn set_max_level() {
 impl log::Log for Logger {
     #[inline]
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        let config_guard = config::get_config_temp();
-        let config = config_guard.log();
-
-        config
-            .filter()
+        LOGGER_FILTER
+            .load()
             .get(metadata.target())
             .map(|lvl| *lvl >= metadata.level())
             .unwrap_or(true)
@@ -248,8 +260,7 @@ impl Record {
         data.push(b'\n');
 
         file.write_all(&data).await?;
-        // todo: 定时保存
-        //file.sync_data().await?;
+        file.sync_data().await?;
 
         Ok(())
     }

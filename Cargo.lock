@@ -1746,6 +1746,7 @@ dependencies = [
 name = "logger"
 version = "0.1.0"
 dependencies = [
+ "arc-swap",
  "chrono",
  "colored",
  "compact_str",
