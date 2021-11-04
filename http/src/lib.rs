@@ -66,9 +66,9 @@ pub async fn run_http_server(
 
     match config.r#type() {
         config::ListenType::Uds => {cfg_if! {
-            if #[cfg(target_os = "unix")] {
+            if #[cfg(target_family = "unix")] {
                 use hyperlocal::UnixServerExt;
-                let server = hyper::Server::bind_unix(config.bind())?
+                let server = hyper::Server::bind_unix(Path::new(config.bind().as_str()))?
                     .serve(axum_app.into_make_service());
                 log::info!("listen on unix://{}", config.bind());
                 let graceful = server.with_graceful_shutdown(async {
