@@ -15,6 +15,7 @@ use axum::{AddExtensionLayer, Router};
 use cfg_if::cfg_if;
 use inquire::error::InquireError;
 use inquire::PasswordDisplayMode;
+use sea_orm::prelude::DbConn;
 
 use global_resource::SHUTDOWN_NOTIFY;
 use template::TemplateManager;
@@ -22,7 +23,6 @@ use template::TemplateManager;
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};
 use crate::session_store::SessionStore;
-use sea_orm::prelude::DbConn;
 
 mod cookies;
 mod error;
@@ -68,11 +68,14 @@ pub async fn run_http_server(
         config::ListenType::Uds => {cfg_if! {
             if #[cfg(target_family = "unix")] {
                 use hyperlocal::UnixServerExt;
-                let server = hyper::Server::bind_unix(Path::new(config.bind().as_str()))?
+                let path = Path::new(config.bind().as_str());
+                std::fs::remove_file(&path).ok();
+                let server = hyper::Server::bind_unix(&path)?
                     .serve(axum_app.into_make_service());
-                log::info!("listen on unix://{}", config.bind());
+                log::info!("listen on unix://{}", path.display());
                 let graceful = server.with_graceful_shutdown(async {
                     let resp = SHUTDOWN_NOTIFY.register(5).await.wait().await;
+                    std::fs::remove_file(&path).unwrap();
                     log::debug!("http server shutdown");
                     resp.ready()
                 });
