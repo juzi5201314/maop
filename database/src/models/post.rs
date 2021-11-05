@@ -2,11 +2,11 @@ use anyhow::Context;
 use chrono::NaiveDateTime;
 use sea_orm::prelude::DbConn;
 use sea_orm::{
-    ActiveModelBehavior, ActiveModelTrait, ActiveValue,
+    ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait,
     DeriveEntityModel, DeriveIntoActiveModel, DerivePrimaryKey,
     DeriveRelation, EntityTrait, EnumIter, IdenStatic,
-    IntoActiveModel, PrimaryKeyTrait, Related, RelationDef,
-    RelationTrait,
+    IntoActiveModel, PrimaryKeyTrait, QueryFilter, Related,
+    RelationDef, RelationTrait,
 };
 
 use crate::models::comment::{
@@ -18,7 +18,14 @@ use super::def_fn;
 pub type Post = Entity;
 pub type PostModel = Model;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    DeriveEntityModel,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[sea_orm(table_name = "posts")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -63,7 +70,27 @@ impl Post {
     );
 
     def_fn!(
+        recover(db, posts: Vec<PostModel>) -> () {
+            Post::delete_many()
+                .exec(db)
+                .await
+                .context("Post::recover::delete_all")?;
+            for post in posts {
+                let active_model = Into::<ActiveModel>::into(post);
+                active_model.insert(db).await.context("Post::recover::insert")?;
+            }
+            Ok(())
+        }
+    );
+
+    def_fn!(
         delete(db, id: u32) -> () {
+            Comment::delete_many()
+                .filter(super::comment::Column::PostId.eq(id))
+                .exec(db)
+                .await
+                .context("Post::delete::Comment::delete_many")?;
+
             (DeletePost {
                 id
             }).into_active_model()
@@ -131,7 +158,10 @@ impl Post {
 
 impl PostModel {
     #[inline]
-    pub async fn refresh(&mut self, db: &DbConn) -> anyhow::Result<()> {
+    pub async fn refresh(
+        &mut self,
+        db: &DbConn,
+    ) -> anyhow::Result<()> {
         *self = Post::find_one(db, self.id).await?.unwrap();
         Ok(())
     }

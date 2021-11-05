@@ -1,8 +1,12 @@
+#![feature(try_blocks)]
+
 use std::path::PathBuf;
 
 use argh::FromArgs;
 
 use sub_commands::password::PasswordSubCommand;
+
+use crate::sub_commands::backup::BackupSubCommand;
 
 mod sub_commands;
 
@@ -11,6 +15,7 @@ mod sub_commands;
 /// ...
 enum SubCommandEnum {
     Password(PasswordSubCommand),
+    Backup(BackupSubCommand),
 }
 
 #[derive(FromArgs, Debug)]
@@ -43,6 +48,7 @@ fn main() {
     if let Some(sub_cmd) = &args.sub_command {
         match sub_cmd {
             SubCommandEnum::Password(cmd) => cmd.run(&args),
+            SubCommandEnum::Backup(cmd) => cmd.run(&args),
         }
     } else {
         core::run(args.conf, args.no_password);

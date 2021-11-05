@@ -97,6 +97,20 @@ impl Comment {
     );
 
     def_fn!(
+        recover(db, comments: Vec<CommentModel>) -> () {
+            Comment::delete_many()
+                .exec(db)
+                .await
+                .context("Comment::recover::delete_all")?;
+            for comment in comments {
+                let active_model = Into::<ActiveModel>::into(comment);
+                active_model.insert(db).await.context("Comment::recover::insert")?;
+            }
+            Ok(())
+        }
+    );
+
+    def_fn!(
         hard_delete(db, id: u32) -> () {
             (DeleteComment {
                 id
