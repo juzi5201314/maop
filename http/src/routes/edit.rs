@@ -214,6 +214,9 @@ async fn new_comment(
     Json(data): Json<CommentData>,
     Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<CommentRes>, HttpError> {
+    if data.nickname.is_empty() || data.email.is_empty() || data.content.is_empty() {
+        return Err(HttpError::from_const(StatusCode::BAD_REQUEST, "Content cannot be empty"))
+    }
     let comment_id = Comment::insert(
         &*db,
         data.post_id,
