@@ -1,0 +1,17 @@
+[package]
+name = "search"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+config = { path = "../config" }
+
+anyhow = "1.0"
+
+tantivy = { version = "0.16", default-features = false, features = ["mmap", "brotli-compression"] }
+cang-jie = "0.13.0"
+jieba-rs = "0.6.5"
+once_cell = "1.8.0"
+parking_lot = "0.11"
