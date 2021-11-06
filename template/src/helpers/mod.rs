@@ -1,6 +1,6 @@
 use handlebars::{
     Context, Handlebars, Helper, HelperResult, JsonRender, Output,
-    RenderContext,
+    RenderContext, RenderError,
 };
 
 #[inline]
@@ -65,5 +65,37 @@ pub fn render(
 ) -> HelperResult {
     let val = h.param(0).unwrap().value().render();
     out.write(&val)?;
+    Ok(())
+}
+
+#[inline]
+pub fn render_md(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let val = h.param(0).unwrap().value().render();
+    out.write(
+        &utils::markdown::render(&val)
+            .map_err(|e| RenderError::new(e.to_string()))?,
+    )?;
+    Ok(())
+}
+
+#[inline]
+pub fn render_md_safe(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let val = h.param(0).unwrap().value().render();
+    out.write(
+        &utils::markdown::render_safe(&val)
+            .map_err(|e| RenderError::new(e.to_string()))?,
+    )?;
     Ok(())
 }

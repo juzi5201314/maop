@@ -18,6 +18,7 @@ use database::models::post::{NewPost, Post, PostModel};
 use crate::error::HttpError;
 use anyhow::Context;
 use crate::login_status::Logged;
+use utils::markdown::html_escape;
 
 pub fn routes_post() -> Router<BoxRoute> {
     let router = Router::new()
@@ -69,11 +70,7 @@ async fn update_post(
         &*db,
         post_id,
         data.title,
-        if let Some(s) = data.content {
-            Some(utils::markdown::render(&s)?)
-        } else {
-            None
-        },
+        data.content,
     )
     .await?;
     Ok(Json(PostRes { id: post_id }))
@@ -88,7 +85,7 @@ async fn new_post(
         &*db,
         NewPost {
             title: data.title,
-            content: utils::markdown::render(&data.content)?,
+            content: data.content,
         },
     )
     .await?;
@@ -221,9 +218,9 @@ async fn new_comment(
         &*db,
         data.post_id,
         NewComment {
-            content: utils::markdown::render_safe(&data.content)?,
-            nickname: data.nickname.to_string(),
-            email: data.email.to_string(),
+            content: html_escape(&data.content),
+            nickname: html_escape(&data.nickname.to_string()),
+            email: html_escape(&data.email.to_string()),
         },
         data.reply_to,
     )

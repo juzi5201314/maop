@@ -32,7 +32,7 @@
             {{#each comments as |comment|}}
                 <blockquote id="comment-{{comment.id}}">
                     <p>{{comment.nickname}} <{{comment.email}}>:</p>
-                    <p>{{comment.content}}</p>
+                    <p>{{render_md_safe comment.content}}</p>
 
                     {{#if comment.deleted}}
                         <button id="delete-comment-{{comment.id}}" disabled>deleted</button>
@@ -74,7 +74,7 @@
         const easy_mde = new EasyMDE({
             autosave: {
                 enabled: true,
-                delay: 2000,
+                delay: 1000,
                 uniqueId: "maop-small-theme-mde-comment-{{#if post}}{{post.id}}{{/if}}-" + window.location.href
             },
             indentWithTabs: false,

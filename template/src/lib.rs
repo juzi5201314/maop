@@ -5,7 +5,10 @@ use anyhow::Context;
 use handlebars::Handlebars;
 use serde::Serialize;
 
-use crate::helpers::{newline_helper, nothing, render, truncate};
+use crate::helpers::{
+    newline_helper, nothing, render, render_md, render_md_safe,
+    truncate,
+};
 use crate::template_provider::{
     EmbedTemplateProvider, LocalFilesProvider, TemplateProvider,
 };
@@ -31,6 +34,8 @@ impl<'reg> TemplateManager<'reg> {
         hbs.register_helper("pass", box nothing);
         hbs.register_helper("render", box render);
         hbs.register_helper("truncate", box truncate);
+        hbs.register_helper("render_md", box render_md);
+        hbs.register_helper("render_md_safe", box render_md_safe);
 
         let provider = if let Some(path) = config.template() {
             TemplateProvider::new(LocalFilesProvider(path.clone()))

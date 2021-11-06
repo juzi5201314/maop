@@ -16,7 +16,7 @@
         <h2>
             <a href="/post/{{post.id}}">{{post.title}}</a>
         </h2>
-        {{truncate post.content 100 "..."}}
+        {{truncate (render_md post.content) 100 "..."}}
         <br/>
     {{/each}}
 

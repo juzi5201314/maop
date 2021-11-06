@@ -20,7 +20,7 @@
         {{newline}}
     {{/if}}
     <p>
-        {{post.content}}
+        {{render_md post.content}}
     </p>
 
     <hr/>
@@ -39,13 +39,13 @@
                             {{#if parent_comment.deleted}}
                                 该评论已删除
                             {{else}}
-                                {{parent_comment.content}}
+                                {{render_md_safe parent_comment.content}}
                             {{/if}}
                         </p>
                     </blockquote>
                 {{/with}}
             {{/if}}
-            {{comment.content}}
+            {{render_md_safe comment.content}}
         {{/unless}}
         <br/>
     {{/each}}

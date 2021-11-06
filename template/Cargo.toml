@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 config = { path = "../config" }
+utils = { path = "../utils" }
 
 handlebars = { version = "4.0", features = ["script_helper"] }
 serde = { version = "1.0", features = ["derive"] }
