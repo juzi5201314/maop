@@ -23,6 +23,7 @@ port = "7474"
 type = "http"
 session_expiry = "7d"
 overdue_check_interval = "5h"
+cors = []
 
 [render]
 strict_mode = true

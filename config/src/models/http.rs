@@ -13,5 +13,6 @@ crate::gen_config!(HttpConfig, {
     port: u16,
     r#type: ListenType,
     session_expiry: TimeUnit,
-    overdue_check_interval: TimeUnit
+    overdue_check_interval: TimeUnit,
+    cors: Vec<CompactStr>
 });

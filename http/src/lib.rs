@@ -20,11 +20,13 @@ use sea_orm::prelude::DbConn;
 use global_resource::SHUTDOWN_NOTIFY;
 use template::TemplateManager;
 
+use crate::cors::CorsLayer;
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};
 use crate::session_store::SessionStore;
 
 mod cookies;
+mod cors;
 mod error;
 mod login_status;
 mod routes;
@@ -62,7 +64,8 @@ pub async fn run_http_server(
                 full_config.data_path().clone().join("sessions"),
             )
             .await?,
-        ));
+        ))
+        .layer(CorsLayer::new(config.cors().clone()));
 
     match config.r#type() {
         config::ListenType::Uds => {cfg_if! {
