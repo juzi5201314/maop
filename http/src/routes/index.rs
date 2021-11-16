@@ -8,7 +8,7 @@ use axum::routing::BoxRoute;
 use axum::{Json, Router};
 use sea_orm::prelude::DbConn;use anyhow::Context;
 
-use config::SiteConfig;
+use config::{SiteConfig, MaopConfig};
 use database::models::post::{Post, PostModel};
 
 use crate::error::HttpError;
@@ -49,11 +49,17 @@ impl FromRequest for Data {
         req: &mut RequestParts<Body>,
     ) -> Result<Self, Self::Rejection> {
         let login_status = LoginStatus::from_request(req).await?;
-        let Extension(db): Extension<Arc<DbConn>> =
+        let Extension(db) =
             Extension::<Arc<DbConn>>::from_request(req)
                 .await
                 .context("`DbConn` extension missing")?;
-        let site = config::get_config_temp().site().clone();
+
+        let Extension(config) =
+            Extension::<Arc<MaopConfig>>::from_request(req)
+                .await
+                .context("`config` extension missing")?;
+
+        let site = config.site().clone();
         Ok(Data {
             site,
             logged: matches!(login_status, LoginStatus::Logged),

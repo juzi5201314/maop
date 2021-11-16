@@ -11,7 +11,7 @@ use axum::{extract, Json, Router};
 use compact_str::CompactStr;
 use sea_orm::prelude::DbConn;
 
-use config::SiteConfig;
+use config::{SiteConfig, MaopConfig};
 use database::models::comment::{Comment, CommentModel, NewComment};
 use database::models::post::{NewPost, Post, PostModel};
 
@@ -130,7 +130,13 @@ impl FromRequest for NewPostData {
         req: &mut RequestParts<Body>,
     ) -> Result<Self, Self::Rejection> {
         Logged::from_request(req).await?;
-        let site = config::get_config_temp().site().clone();
+
+        let Extension(config) =
+            Extension::<Arc<MaopConfig>>::from_request(req)
+                .await
+                .context("`config` extension missing")?;
+
+        let site = config.site().clone();
 
         Ok(NewPostData { site })
     }
@@ -173,7 +179,13 @@ impl FromRequest for EditPostData {
             Extension::from_request(req)
                 .await
                 .context("`DbConn` extension missing")?;
-        let site = config::get_config_temp().site().clone();
+
+        let Extension(config) =
+            Extension::<Arc<MaopConfig>>::from_request(req)
+                .await
+                .context("`config` extension missing")?;
+
+        let site = config.site().clone();
 
         let post_and_comments = Post::find_and_commit(&*db, post_id)
             .await?

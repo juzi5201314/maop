@@ -37,6 +37,7 @@ futures = "0.3"
 axum = { version = "0.2", features = ["headers"] }
 hyper = { version = "0.14", features = ["full"] }
 tower = "0.4"
+tower-http = { version = "0.1.2", features = ["cors"] }
 
 [target.'cfg(target_family = "unix")'.dependencies]
 hyperlocal = "0.8"

@@ -9,24 +9,28 @@ use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::handler::get;
+use axum::http::HeaderValue;
 use axum::{AddExtensionLayer, Router};
 use cfg_if::cfg_if;
+use compact_str::CompactStr;
 use inquire::error::InquireError;
 use inquire::PasswordDisplayMode;
 use sea_orm::prelude::DbConn;
+use tower_http::cors;
 
 use global_resource::SHUTDOWN_NOTIFY;
 use template::TemplateManager;
 
-use crate::cors::CorsLayer;
+use crate::config_layer::ConfigLayer;
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};
 use crate::session_store::SessionStore;
 
+mod config_layer;
 mod cookies;
-mod cors;
 mod error;
 mod login_status;
 mod routes;
@@ -65,7 +69,30 @@ pub async fn run_http_server(
             )
             .await?,
         ))
-        .layer(CorsLayer::new(config.cors().clone()));
+        .layer(ConfigLayer::new())
+        .layer(
+            cors::CorsLayer::new()
+                .allow_origin(
+                    if full_config
+                        .http()
+                        .cors()
+                        .contains(&CompactStr::new_inline("*"))
+                    {
+                        cors::AnyOr::from(cors::any())
+                    } else {
+                        cors::AnyOr::from(cors::Origin::list(
+                            full_config.http().cors().iter().map(
+                                |s| HeaderValue::from_str(s).unwrap(),
+                            ),
+                        ))
+                    },
+                )
+                .allow_credentials(true)
+                .allow_headers(cors::any())
+                .allow_methods(cors::any())
+                .expose_headers(cors::any())
+                .max_age(Duration::from_secs(3600)),
+        );
 
     match config.r#type() {
         config::ListenType::Uds => {cfg_if! {

@@ -11,7 +11,7 @@ use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
 use sea_orm::prelude::DbConn;
 
-use config::SiteConfig;
+use config::{SiteConfig, MaopConfig};
 use database::models::comment::CommentModel;
 use database::models::post::{Post, PostModel};
 
@@ -61,7 +61,13 @@ impl FromRequest for Data {
             Extension::<Arc<DbConn>>::from_request(req)
                 .await
                 .context("`DbConn` extension missing")?;
-        let site = config::get_config_temp().site().clone();
+
+        let Extension(config) =
+            Extension::<Arc<MaopConfig>>::from_request(req)
+                .await
+                .context("`config` extension missing")?;
+
+        let site = config.site().clone();
 
         let post_and_comments = Post::find_and_commit(&*db, post_id)
             .await?

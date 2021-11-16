@@ -13,7 +13,7 @@ use compact_str::CompactStr;
 use hyper::StatusCode;
 use anyhow::Context;
 
-use config::SiteConfig;
+use config::{SiteConfig, MaopConfig};
 use utils::password_hash::password_verify;
 
 use crate::error::HttpError;
@@ -60,7 +60,12 @@ impl FromRequest for Data {
         req: &mut RequestParts<Body>,
     ) -> Result<Self, Self::Rejection> {
         let login_status = LoginStatus::from_request(req).await?;
-        let site = config::get_config_temp().site().clone();
+        let Extension(config) =
+            Extension::<Arc<MaopConfig>>::from_request(req)
+                .await
+                .context("`config` extension missing")?;
+
+        let site = config.site().clone();
 
         Ok(Data {
             site,
@@ -75,6 +80,7 @@ pub async fn login(
     Json(data): Json<LoginData>,
     Extension(password): Extension<Arc<Password>>,
     Extension(store): Extension<SessionStore>,
+    Extension(config): Extension<Arc<MaopConfig>>,
     mut session: Session,
 ) -> Result<Response<Full<Bytes>>, HttpError> {
     let mut resp = Response::builder();
@@ -89,7 +95,7 @@ pub async fn login(
                 .insert("login_status", LoginStatus::Logged)
                 .unwrap();
             session.expire_in({
-                *config::get_config_temp().http().session_expiry().duration()
+                *config.http().session_expiry().duration()
             });
             let cookie = store
                 .store_session(session.into())
