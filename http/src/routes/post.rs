@@ -4,10 +4,9 @@ use std::sync::Arc;
 use anyhow::Context;
 use axum::body::Body;
 use axum::extract::{Extension, FromRequest, RequestParts};
-use axum::handler::get;
+use axum::routing::get;
 use axum::http::StatusCode;
 use axum::response::Html;
-use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
 use sea_orm::prelude::DbConn;
 
@@ -18,12 +17,10 @@ use database::models::post::{Post, PostModel};
 use crate::error::HttpError;
 use crate::login_status::LoginStatus;
 
-pub fn routes() -> Router<BoxRoute> {
-    let router = Router::new()
+pub fn routes() -> Router {
+    Router::new()
         .route("/", get(index_ssr))
-        .route("/api", get(index_api));
-
-    router.boxed()
+        .route("/api", get(index_api))
 }
 
 #[allow(clippy::needless_lifetimes)]

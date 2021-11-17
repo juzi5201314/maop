@@ -1,27 +1,26 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::body::Body;
 use axum::extract::{Extension, FromRequest, Query, RequestParts};
-use axum::handler::{delete, get, post};
 use axum::http::StatusCode;
 use axum::response::Html;
-use axum::routing::BoxRoute;
+use axum::routing::{delete, get, post};
 use axum::{extract, Json, Router};
 use compact_str::CompactStr;
 use sea_orm::prelude::DbConn;
 
-use config::{SiteConfig, MaopConfig};
+use config::{MaopConfig, SiteConfig};
 use database::models::comment::{Comment, CommentModel, NewComment};
 use database::models::post::{NewPost, Post, PostModel};
-
-use crate::error::HttpError;
-use anyhow::Context;
-use crate::login_status::Logged;
 use utils::markdown::html_escape;
 
-pub fn routes_post() -> Router<BoxRoute> {
-    let router = Router::new()
+use crate::error::HttpError;
+use crate::login_status::Logged;
+
+pub fn routes_post() -> Router {
+    Router::new()
         .route(
             "/:id",
             get(index_ssr_edit_post)
@@ -30,17 +29,13 @@ pub fn routes_post() -> Router<BoxRoute> {
         )
         .route("/", get(index_ssr_new_post).post(new_post))
         .route("/:id/api", get(index_api_edit_post))
-        .route("/api", get(index_api_new_post));
-
-    router.boxed()
+        .route("/api", get(index_api_new_post))
 }
 
-pub fn routes_comment() -> Router<BoxRoute> {
-    let router = Router::new()
+pub fn routes_comment() -> Router {
+    Router::new()
         .route("/", post(new_comment))
-        .route("/:id", delete(delete_comment));
-
-    router.boxed()
+        .route("/:id", delete(delete_comment))
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -66,13 +61,7 @@ async fn update_post(
     Json(data): Json<UpdatePostData>,
     Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<PostRes>, HttpError> {
-    Post::update(
-        &*db,
-        post_id,
-        data.title,
-        data.content,
-    )
-    .await?;
+    Post::update(&*db, post_id, data.title, data.content).await?;
     Ok(Json(PostRes { id: post_id }))
 }
 
@@ -226,8 +215,14 @@ async fn new_comment(
     Json(data): Json<CommentData>,
     Extension(db): Extension<Arc<DbConn>>,
 ) -> Result<Json<CommentRes>, HttpError> {
-    if data.nickname.is_empty() || data.email.is_empty() || data.content.is_empty() {
-        return Err(HttpError::from_const(StatusCode::BAD_REQUEST, "Content cannot be empty"))
+    if data.nickname.is_empty()
+        || data.email.is_empty()
+        || data.content.is_empty()
+    {
+        return Err(HttpError::from_const(
+            StatusCode::BAD_REQUEST,
+            "Content cannot be empty",
+        ));
     }
     let comment_id = Comment::insert(
         &*db,

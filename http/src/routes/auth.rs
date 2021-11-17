@@ -1,19 +1,18 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use async_session::SessionStore as _;
 use axum::body::{Body, Bytes, Full};
 use axum::extract::{Extension, FromRequest, RequestParts};
-use axum::handler::{get, post};
 use axum::http::header::SET_COOKIE;
 use axum::http::Response;
 use axum::response::Html;
-use axum::routing::BoxRoute;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use compact_str::CompactStr;
 use hyper::StatusCode;
-use anyhow::Context;
 
-use config::{SiteConfig, MaopConfig};
+use config::{MaopConfig, SiteConfig};
 use utils::password_hash::password_verify;
 
 use crate::error::HttpError;
@@ -23,13 +22,11 @@ use crate::session_store::SessionStore;
 
 pub type Password = Option<String>;
 
-pub fn routes() -> Router<BoxRoute> {
-    let router = Router::new()
+pub fn routes() -> Router {
+    Router::new()
         .route("/", post(login).get(index_ssr))
         .route("/logout", post(logout))
-        .route("/api", get(index_api));
-
-    router.boxed()
+        .route("/api", get(index_api))
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -37,9 +34,7 @@ async fn index_ssr<'reg>(
     data: Data,
     Extension(tm): Extension<Arc<template::TemplateManager<'reg>>>,
 ) -> Result<Html<String>, HttpError> {
-    tm.render("auth", &data)
-        .map(Html)
-        .map_err(Into::into)
+    tm.render("auth", &data).map(Html).map_err(Into::into)
 }
 
 async fn index_api(data: Data) -> Result<Json<Data>, HttpError> {

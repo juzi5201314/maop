@@ -11,8 +11,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::handler::get;
 use axum::http::HeaderValue;
+use axum::routing::get;
 use axum::{AddExtensionLayer, Router};
 use cfg_if::cfg_if;
 use compact_str::CompactStr;
