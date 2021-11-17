@@ -29,7 +29,6 @@ impl IntoResponse for HttpError {
     type BodyError = Infallible;
 
     fn into_response(self) -> Response<Self::Body> {
-        log::error!("{}", self.msg);
         Response::builder()
             .status(self.code)
             .body(Full::from(format!(

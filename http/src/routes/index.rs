@@ -1,20 +1,22 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::body::Body;
 use axum::extract::{Extension, FromRequest, RequestParts};
-use axum::routing::get;
 use axum::response::Html;
+use axum::routing::get;
 use axum::{Json, Router};
-use sea_orm::prelude::DbConn;use anyhow::Context;
+use sea_orm::prelude::DbConn;
 
-use config::{SiteConfig, MaopConfig};
+use config::{MaopConfig, SiteConfig};
 use database::models::post::{Post, PostModel};
 
 use crate::error::HttpError;
 use crate::login_status::LoginStatus;
 
 pub fn routes() -> Router {
-    Router::new().route("/", get(index_ssr))
+    Router::new()
+        .route("/", get(index_ssr))
         .route("/api", get(index_api))
 }
 

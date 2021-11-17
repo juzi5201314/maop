@@ -25,6 +25,7 @@ use global_resource::SHUTDOWN_NOTIFY;
 use template::TemplateManager;
 
 use crate::config_layer::ConfigLayer;
+use crate::log_layer::LogLayer;
 use crate::routes::auth::Password;
 use crate::routes::{assets, auth, edit, index, post};
 use crate::session_store::SessionStore;
@@ -32,6 +33,7 @@ use crate::session_store::SessionStore;
 mod config_layer;
 mod cookies;
 mod error;
+mod log_layer;
 mod login_status;
 mod routes;
 mod session;
@@ -50,7 +52,7 @@ pub async fn run_http_server(
     };
 
     let axum_app = Router::new()
-        .nest("/", index::routes())
+        .merge(index::routes())
         .nest("/post/:id", post::routes())
         .nest("/assets", get(assets::assets))
         .nest("/edit", edit::routes_post())
@@ -70,6 +72,7 @@ pub async fn run_http_server(
             .await?,
         ))
         .layer(ConfigLayer::new())
+        .layer(LogLayer::new())
         .layer(
             cors::CorsLayer::new()
                 .allow_origin(
