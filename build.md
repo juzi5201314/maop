@@ -17,6 +17,12 @@
 
 ## Features
 * 默认: `snmalloc`
-* `core/snmalloc`: 使用[snmalloc]分配器(https://github.com/microsoft/snmalloc)
+* `core/snmalloc`: 使用[snmalloc](https://github.com/microsoft/snmalloc)分配器.
 * `core/native-cpu`: 开启snmalloc/native-cpu feature.
 * `http/session_store_rocksdb`: 使用[rocksdb](https://github.com/facebook/rocksdb)储存session而不是默认的文件储存.
+
+## 优化
+release编译默认已经进行了lto与strip，
+但可以使用`target-cpu=native`来启用潜在的针对本机cpu的优化:
+
+`RUSTFLAGS="-C target-cpu=native" cargo ...`
