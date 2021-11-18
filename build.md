@@ -9,8 +9,14 @@
 ### 开启features
 使用`--features`标志开启指定feature，使用逗号分割.
 
-`cargo +nightly build --release --features=featureA,featureB`
+`cargo +nightly build --release --features=featureA,core/featureB`
 
 使用`--no-default-features`标志禁用默认的feature.
 
 `cargo +nightly build --release --no-default-features`
+
+## Features
+* 默认: `snmalloc`
+* `core/snmalloc`: 使用[snmalloc]分配器(https://github.com/microsoft/snmalloc)
+* `core/native-cpu`: 开启snmalloc/native-cpu feature.
+* `http/session_store_rocksdb`: 使用[rocksdb](https://github.com/facebook/rocksdb)储存session而不是默认的文件储存.
