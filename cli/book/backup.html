@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>单位 - Maop</title>
+        <title>备份 - Maop</title>
         <!-- Custom HTML head -->
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../../index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="../../build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="../../cli/index.html"><strong aria-hidden="true">3.</strong> 命令</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../cli/book/backup.html"><strong aria-hidden="true">3.1.</strong> 备份</a></li><li class="chapter-item expanded "><a href="../../cli/book/password.html"><strong aria-hidden="true">3.2.</strong> 修改密码</a></li></ol></li><li class="chapter-item expanded "><a href="../../config/index.html"><strong aria-hidden="true">4.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../config/book/unit.html" class="active"><strong aria-hidden="true">4.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="../../config/book/site.html"><strong aria-hidden="true">4.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="../../config/book/database.html"><strong aria-hidden="true">4.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="../../config/book/default.html"><strong aria-hidden="true">4.4.</strong> 默认配置</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../../index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="../../build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="../../cli/index.html"><strong aria-hidden="true">3.</strong> 命令</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../cli/book/backup.html" class="active"><strong aria-hidden="true">3.1.</strong> 备份</a></li><li class="chapter-item expanded "><a href="../../cli/book/password.html"><strong aria-hidden="true">3.2.</strong> 修改密码</a></li></ol></li><li class="chapter-item expanded "><a href="../../config/index.html"><strong aria-hidden="true">4.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../config/book/unit.html"><strong aria-hidden="true">4.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="../../config/book/site.html"><strong aria-hidden="true">4.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="../../config/book/database.html"><strong aria-hidden="true">4.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="../../config/book/default.html"><strong aria-hidden="true">4.4.</strong> 默认配置</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -137,27 +137,33 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h2 id="单位"><a class="header" href="#单位">单位</a></h2>
-<h3 id="时间"><a class="header" href="#时间">时间</a></h3>
-<p>时间解析使用<a href="https://docs.rs/parse_duration/">parse_duration</a>.
-具体语法可以<a href="https://docs.rs/parse_duration/">看这里</a>.</p>
-<p>一般格式为数字+单位, 例如<code>30s</code>, <code>24h</code>, <code>1 minutes 39 seconds</code>等.</p>
-<h3 id="数据大小"><a class="header" href="#数据大小">数据大小</a></h3>
-<p><del>懂的都懂</del></p>
-<p><code>1 B</code>, <code>1 KB</code>, <code>1 MIB</code>...</p>
-<blockquote>
-<p>KB for 1000 bytes, KiB for 1024 bytes</p>
-</blockquote>
-<p>最高支持PIB级大小.</p>
+                        <h1 id="backup"><a class="header" href="#backup">Backup</a></h1>
+<p>该子命令用于创建和恢复备份</p>
+<p>备份会将全部文章和评论以及当前配置项的值用msgpack编码并且brotli压缩成为单个<code>{date}.backup</code>文件.</p>
+<p>恢复备份除了会将当前数据库<strong>清空</strong>, 然后再从备份中恢复. 同时将备份的配置项值输出到<code>{backup file name}.json</code>中.</p>
+<h2 id="参数"><a class="header" href="#参数">参数</a></h2>
+<p><code>-o/--output</code>: 备份文件输出路径. 默认为<code>{data_path}/backup</code>.
+<code>-r/--recover</code>: 已有的<code>.backup</code>文件路径, 指定该选项等于<strong>恢复</strong>备份.</p>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<h3 id="创建备份"><a class="header" href="#创建备份">创建备份</a></h3>
+<pre><code class="language-shell">maop backup
+</code></pre>
+<p>备份到<code>/home/me/maop-bk/xxx.backup</code></p>
+<pre><code class="language-shell">maop backup -o /home/me/maop-bk
+</code></pre>
+<h3 id="恢复备份"><a class="header" href="#恢复备份">恢复备份</a></h3>
+<p>从<code>/home/me/maop-bk/xxx.backup</code>恢复:</p>
+<pre><code class="language-shell">maop backup -r /home/me/maop-bk/xxx.backup
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../config/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../cli/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                            <a rel="next" href="../../config/book/site.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../../cli/book/password.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         <div style="clear: both"></div>
@@ -166,10 +172,10 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../config/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../cli/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                    <a rel="next" href="../../config/book/site.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../../cli/book/password.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

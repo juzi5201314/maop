@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">3.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">3.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="config/book/site.html"><strong aria-hidden="true">3.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="config/book/database.html"><strong aria-hidden="true">3.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="config/book/default.html"><strong aria-hidden="true">3.4.</strong> 默认配置</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="cli/index.html"><strong aria-hidden="true">3.</strong> 命令</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/book/backup.html"><strong aria-hidden="true">3.1.</strong> 备份</a></li><li class="chapter-item expanded "><a href="cli/book/password.html"><strong aria-hidden="true">3.2.</strong> 修改密码</a></li></ol></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">4.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">4.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="config/book/site.html"><strong aria-hidden="true">4.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="config/book/database.html"><strong aria-hidden="true">4.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="config/book/default.html"><strong aria-hidden="true">4.4.</strong> 默认配置</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -213,6 +213,42 @@ rust代码更容易维护和开发。</li>
 但可以使用<code>target-cpu=native</code>和<code>core/native-cpu</code>feature来启用潜在的针对本机cpu的优化:</p>
 <pre><code>RUSTFLAGS=&quot;-C target-cpu=native&quot; cargo +nightly build --release --features=core/native-cpu
 </code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cli"><a class="header" href="#cli">Cli</a></h1>
+<h2 id="子命令"><a class="header" href="#子命令">子命令</a></h2>
+<ul>
+<li><a href="cli/./book/backup.html">backup</a></li>
+<li><a href="cli/./book/password.html">password</a></li>
+</ul>
+<h2 id="参数"><a class="header" href="#参数">参数</a></h2>
+<p><code>-c/--config</code>: 指定配置文件路径, 可指定多个. example: <code>maop -c xx.toml -c yy.json</code></p>
+<p><code>-e/--env</code>: 指定<code>.env</code>文件路径.</p>
+<p><code>--no_password</code>: 无密码启动.</p>
+<h2 id="注意"><a class="header" href="#注意">注意</a></h2>
+<p>无密码启动并非不需要密码就能登录, 恰恰相反, 是<strong>任何人都无法登录</strong>, 没有密码就永远不会有正确密码.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="backup"><a class="header" href="#backup">Backup</a></h1>
+<p>该子命令用于创建和恢复备份</p>
+<p>备份会将全部文章和评论以及当前配置项的值用msgpack编码并且brotli压缩成为单个<code>{date}.backup</code>文件.</p>
+<p>恢复备份除了会将当前数据库<strong>清空</strong>, 然后再从备份中恢复. 同时将备份的配置项值输出到<code>{backup file name}.json</code>中.</p>
+<h2 id="参数-1"><a class="header" href="#参数-1">参数</a></h2>
+<p><code>-o/--output</code>: 备份文件输出路径. 默认为<code>{data_path}/backup</code>.
+<code>-r/--recover</code>: 已有的<code>.backup</code>文件路径, 指定该选项等于<strong>恢复</strong>备份.</p>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<h3 id="创建备份"><a class="header" href="#创建备份">创建备份</a></h3>
+<pre><code class="language-shell">maop backup
+</code></pre>
+<p>备份到<code>/home/me/maop-bk/xxx.backup</code></p>
+<pre><code class="language-shell">maop backup -o /home/me/maop-bk
+</code></pre>
+<h3 id="恢复备份"><a class="header" href="#恢复备份">恢复备份</a></h3>
+<p>从<code>/home/me/maop-bk/xxx.backup</code>恢复:</p>
+<pre><code class="language-shell">maop backup -r /home/me/maop-bk/xxx.backup
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="password"><a class="header" href="#password">Password</a></h1>
+<p>该子命令用于更改密码</p>
+<h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
+<pre><code class="language-shell">maop password 123
+</code></pre>
+<p>密码文件存放在data path中, 如果你不是使用默认的data path, 请指定相关config/env文件.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="配置"><a class="header" href="#配置">配置</a></h1>
 <p>虽然maop <a href="config/./src/default.toml">内置</a>了合理的配置, 
 但所有配置项都可以手动更改和覆盖.</p>
