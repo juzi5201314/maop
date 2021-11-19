@@ -4,7 +4,7 @@
 
 一个旨在简洁但功能强大的个人博客程序
 
-| [编译](./build.md) |
+| [Book](https://maop-book.soeur.dev/) | [Example](https://maop.soeur.dev) |
 
 ## 设计宗旨
 - 易于使用。启动一个最小实例应该非常简单，不应该需要过多配置才能使用。
