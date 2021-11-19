@@ -1,0 +1,104 @@
+{{#*inline "title"}}
+    {{post.title}}
+{{/inline}}
+
+{{#*inline "other_headers"}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@12.2.0/dist/markdown-it.min.js"></script>
+{{/inline}}
+
+{{#*inline "body"}}
+    <h1>
+        {{post.title}}
+    </h1>
+
+    {{#if logged}}
+        <blockquote>
+            <p><a href="/edit/{{post.id}}">edit</a></p>
+        </blockquote>
+        {{newline}}
+    {{/if}}
+    <p>
+        {{render_md post.content}}
+    </p>
+
+    <hr/>
+
+    <h3>
+        Comments
+    </h3>
+
+    {{#each comments as |comment|}}
+        {{#unless comment.deleted}}
+            <h4>{{comment.nickname}} &lt;{{comment.email}}&gt;:</h4>
+            {{#if comment.parent_id}}
+                {{#with (lookup ../comments (render comment.parent_id)) as |parent_comment|}}
+                    <blockquote>
+                        <p>
+                            {{#if parent_comment.deleted}}
+                                该评论已删除
+                            {{else}}
+                                {{render_md_safe parent_comment.content}}
+                            {{/if}}
+                        </p>
+                    </blockquote>
+                {{/with}}
+            {{/if}}
+            {{render_md_safe comment.content}}
+        {{/unless}}
+        <br/>
+    {{/each}}
+
+    <h4>
+        Comment
+    </h4>
+    <label>
+        Name:
+        <input id="name"/>
+    </label>
+    <br/>
+    <label>
+        Email:
+        <input id="email"/>
+    </label>
+    <br/>
+    <label>
+        <textarea></textarea>
+    </label>
+    <br/>
+    <button id="comment">Comment!</button>
+
+    <script>
+        const md = window.markdownit();
+        const easy_mde = new EasyMDE({
+            autosave: {
+                enabled: true,
+                delay: 2000,
+                uniqueId: "maop-small-theme-mde-comment-{{post.id}}-" + window.location.href
+            },
+            indentWithTabs: false,
+            previewRender: (c) => md.render(c)
+        });
+
+        window.document.getElementById("comment").addEventListener("click", () => {
+            const name = window.document.getElementById("name").value;
+            const email = window.document.getElementById("email").value;
+
+            post("/edit/comment", {
+                "post_id": {{post.id}},
+                "nickname": name,
+                "email": email,
+                "content": easy_mde.value()
+            }).then(response => {
+                if (response.ok) {
+                    response.json().then(_ => window.location.reload());
+                } else {
+                    alert_err_resp(response);
+                }
+            });
+        })
+    </script>
+{{/inline}}
+
+{{> html}}

@@ -1,0 +1,27 @@
+[config]
+parsing_failed = "Configuration file parsing failed!"
+init_failed = "Failed to initialize configuration file"
+
+[io]
+read_dir_error = "An error occurred while reading the directory!"
+create_dir_error = "An error occurred while creating the directory!"
+
+[settings]
+open_sled_error = "An error occurred when opening the sled database!"
+
+[logger]
+nonexistent_level = "Non-existent log level!"
+send_failure = "Failed to send log!"
+processor_error = "An error occurred in a log processor: "
+
+[database]
+unsupported_database_type = "Unsupported database type"
+
+[unit]
+time_unit_format = "The format of the time unit is: `12s`"
+byte_unit_format = "The format of the byte unit is: `10kb`"
+
+[http]
+unsupported_resp_type = "Unsupported type"
+authentication_failed = "Authentication failed"
+password_file_missing = "If the local password file is lost, the authentication will never succeed. Please restart the software to automatically generate a password."

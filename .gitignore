@@ -1,0 +1,8 @@
+/target
+.idea
+/run
+**/logs
+cargo-timing*
+.env
+maop.toml
+mdbook-build

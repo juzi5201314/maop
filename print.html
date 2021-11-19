@@ -1,0 +1,263 @@
+<!DOCTYPE HTML>
+<html lang="zh" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Maop</title>
+        <meta name="robots" content="noindex" />
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">3.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">3.1.</strong> 单位</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Maop</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/juzi5201314/maop" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="maop"><a class="header" href="#maop">maop</a></h1>
+<p><a href="https://github.com/juzi5201314/maop/actions/workflows/ci.yaml"><img src="https://github.com/juzi5201314/maop/actions/workflows/ci.yaml/badge.svg" alt="Check" /></a></p>
+<p>一个旨在简洁但功能强大的个人博客程序</p>
+<p>| <a href="./build.html">编译</a> |</p>
+<h2 id="设计宗旨"><a class="header" href="#设计宗旨">设计宗旨</a></h2>
+<ul>
+<li>易于使用。启动一个最小实例应该非常简单，不应该需要过多配置才能使用。</li>
+<li>功能强大。在易于使用的前提下，可配置的功能尽可能多。</li>
+<li>性能合格。功能尽可能多，但不应该过多影响性能，尽量(</li>
+<li>目标是个人博客。没有多用户等等既影响开发难度，也影响使用难度的东西。</li>
+<li>开发自由。
+<ul>
+<li>这是一个使用宽松许可证的个人项目，非常欢迎fork和贡献。</li>
+<li>这是一个binary而不是library，所以不需要考虑兼容-
+可以尽情使用nightly版本编译器和nightly feature，激进的msrv</li>
+<li>这是一个个人项目，所以unsafe是可以的，没有unsafe警察。
+只要我们认为它是safe的。如果出现了问题，改正就好了。</li>
+</ul>
+</li>
+</ul>
+<h2 id="特点"><a class="header" href="#特点">特点</a></h2>
+<p>基于上面的设计理念</p>
+<ul>
+<li>maop拥有非常细致的配置项，比如数据库连接,分模块日志等级过滤等等，
+但都有着合理的默认值，启动时最多只需要在第一次启动时输入密码(甚至密码也可以暂时省略)
+，什么都不需要配置也可以良好运行。</li>
+<li>良好的性能和易于维护，使用rust开发，先天比php的typecho有优势，而且
+rust代码更容易维护和开发。</li>
+<li>更多的bug，因为这是一个菜鸟开发的，而好处在于可以激励你为开源项目做贡献(<del>指帮我修bug</del></li>
+</ul>
+<h2 id="目标用户"><a class="header" href="#目标用户">目标用户</a></h2>
+<ul>
+<li>
+<p>至少得会在windows/linux下安装软件(rust)并编译本程序。
+(虽然提供二进制分发，但启用额外feature需要手动编译程序)</p>
+</li>
+<li>
+<p>有小学级别的自学能力，因为配置文件是toml格式的(至少得学懂toml格式)</p>
+</li>
+<li>
+<p>有截图键或者ctrl和cv键。我非常乐意解答任何问题，但至少要有错误信息。</p>
+</li>
+</ul>
+<h2 id="性能"><a class="header" href="#性能">性能</a></h2>
+<p><del>最大的妥协，比typecho性能好</del>
+还在开发中，没有进行针对性能的优化。但在开发过程中尽可能的考虑性能问题。</p>
+<h2 id="为什么没有xxx"><a class="header" href="#为什么没有xxx">为什么没有xxx</a></h2>
+<p>别骂了别骂了，在写了在写了。</p>
+<p>有好玩/有用的功能欢迎讨论。</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="build"><a class="header" href="#build">Build</a></h1>
+<h2 id="必要依赖"><a class="header" href="#必要依赖">必要依赖</a></h2>
+<ul>
+<li><a href="https://www.rust-lang.org">Rust (Nightly)</a></li>
+</ul>
+<h2 id="编译release"><a class="header" href="#编译release">编译(Release)</a></h2>
+<p><code>cargo +nightly build --release</code></p>
+<h3 id="开启features"><a class="header" href="#开启features">开启features</a></h3>
+<p>使用<code>--features</code>标志开启指定feature，使用逗号分割.</p>
+<pre><code>cargo +nightly build --release --features=featureA,core/featureB
+</code></pre>
+<p>使用<code>--no-default-features</code>标志禁用默认的feature.</p>
+<pre><code>cargo +nightly build --release --no-default-features
+</code></pre>
+<h2 id="features"><a class="header" href="#features">Features</a></h2>
+<ul>
+<li>默认: <code>snmalloc</code></li>
+<li><code>core/snmalloc</code>: 使用<a href="https://github.com/microsoft/snmalloc">snmalloc</a>分配器.</li>
+<li><code>core/native-cpu</code>: 开启snmalloc/native-cpu feature.</li>
+<li><code>http/session_store_rocksdb</code>: 使用<a href="https://github.com/facebook/rocksdb">rocksdb</a>储存session而不是默认的文件储存.</li>
+</ul>
+<h2 id="优化"><a class="header" href="#优化">优化</a></h2>
+<p>release编译默认已经进行了lto与strip，
+但可以使用<code>target-cpu=native</code>和<code>core/native-cpu</code>feature来启用潜在的针对本机cpu的优化:</p>
+<pre><code>RUSTFLAGS=&quot;-C target-cpu=native&quot; cargo +nightly build --release --features=core/native-cpu
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="配置"><a class="header" href="#配置">配置</a></h1>
+<p>虽然maop <a href="config/./src/default.toml">内置</a>了合理的配置, 
+但所有配置项都可以手动更改和覆盖.</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="单位"><a class="header" href="#单位">单位</a></h2>
+<h3 id="时间"><a class="header" href="#时间">时间</a></h3>
+<p>时间解析使用<a href="https://docs.rs/parse_duration/">parse_duration</a>.
+具体语法可以<a href="https://docs.rs/parse_duration/">看这里</a>.</p>
+<p>一般格式为数字+单位, 例如<code>30s</code>, <code>24h</code>, <code>1 minutes 39 seconds</code>等.</p>
+<h3 id="数据大小"><a class="header" href="#数据大小">数据大小</a></h3>
+<p><del>懂的都懂</del></p>
+<p><code>1 B</code>, <code>1 KB</code>, <code>1 MIB</code>...</p>
+<blockquote>
+<p>KB for 1000 bytes, KiB for 1024 bytes</p>
+</blockquote>
+<p>最高支持PIB级大小.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+    </body>
+</html>

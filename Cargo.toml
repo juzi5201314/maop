@@ -1,0 +1,23 @@
+cargo-features = ["strip"]
+
+[workspace]
+members = [
+    "cli",
+    "config",
+    "core",
+    "logger",
+    "template",
+    "utils",
+    "proc_macro",
+    "database",
+    "http",
+    "timer",
+    "global-resource"
+]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+#debug = true

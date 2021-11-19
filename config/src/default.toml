@@ -1,0 +1,40 @@
+# default: "$HOME/.maop"
+# data_path = <path>
+
+[site]
+name = "Maop"
+title = "A default title for maop"
+
+[database]
+timeout = "5s"
+max_conn = 50
+min_conn = 1
+max_lifetime = "12h"
+idle_timeout = "1h"
+# Database operations exceeding the specified execution time will issue a warning
+warn_time = "3s"
+shared_cache = false
+statement_cache_capacity = 100
+page_size = 4096
+
+[http]
+bind = "127.0.0.1"
+port = "7474"
+type = "http"
+session_expiry = "7d"
+overdue_check_interval = "5h"
+cors = []
+
+[render]
+strict_mode = true
+dev_mode = false
+
+[log]
+level = "INFO"
+
+[log.filter]
+"sqlx::query" = "INFO"
+
+# tokio runtime configuration
+[runtime]
+shutdown_timeout = "10s"

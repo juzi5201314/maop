@@ -1,0 +1,35 @@
+[package]
+name = "database"
+version = "0.1.0"
+authors = ["soeur <juzi201314@gmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+utils = { path = "../utils" }
+proc_macro = { path = "../proc_macro" }
+config = { path = "../config" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
+log = "0.4"
+compact_str = { version = "0.1", features = ["serde"] }
+sqlx-core = { version = "0.5", default-features = false }
+
+[dependencies.sea-orm]
+version = "0.3"
+default-features = false
+features = ["macros", "mock", "sqlx-chrono", "sqlx-sqlite"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+
+[features]
+default = ["native-tls"]
+native-tls = ["sea-orm/runtime-tokio-native-tls"]
+rustls = ["sea-orm/runtime-tokio-rustls"]

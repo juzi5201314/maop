@@ -1,0 +1,12 @@
+[book]
+authors = ["juzi5201314"]
+language = "zh"
+multilingual = false
+src = "./"
+title = "Maop"
+
+[build]
+build-dir = "mdbook-build"
+
+[output.html]
+git-repository-url = "https://github.com/juzi5201314/maop"

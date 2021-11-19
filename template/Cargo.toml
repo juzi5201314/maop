@@ -1,0 +1,24 @@
+[package]
+name = "template"
+version = "0.1.0"
+authors = ["soeur <juzi201314@gmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+config = { path = "../config" }
+utils = { path = "../utils" }
+
+handlebars = { version = "4.0", features = ["script_helper"] }
+serde = { version = "1.0", features = ["derive"] }
+rust-embed = { version = "6.2.0", features = ["compression", "interpolate-folder-path"] }
+anyhow = "1.0"
+tokio = { version = "1", features = ["full"] }
+walkdir = "2"
+log = "0.4.14"
+itertools = "0.10"
+async-trait = "0.1"
+
+[dev-dependencies]
+database = { path = "../database" }
