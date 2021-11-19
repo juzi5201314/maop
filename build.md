@@ -27,8 +27,8 @@ cargo +nightly build --release --no-default-features
 
 ## 优化
 release编译默认已经进行了lto与strip，
-但可以使用`target-cpu=native`来启用潜在的针对本机cpu的优化:
+但可以使用`target-cpu=native`和`core/native-cpu`feature来启用潜在的针对本机cpu的优化:
 
 ```
-RUSTFLAGS="-C target-cpu=native" cargo ...
+RUSTFLAGS="-C target-cpu=native" cargo +nightly build --release --features=core/native-cpu
 ```
