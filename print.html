@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="cli/index.html"><strong aria-hidden="true">3.</strong> 命令</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/book/backup.html"><strong aria-hidden="true">3.1.</strong> 备份</a></li><li class="chapter-item expanded "><a href="cli/book/password.html"><strong aria-hidden="true">3.2.</strong> 修改密码</a></li></ol></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">4.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">4.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="config/book/site.html"><strong aria-hidden="true">4.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="config/book/database.html"><strong aria-hidden="true">4.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="config/book/default.html"><strong aria-hidden="true">4.4.</strong> 默认配置</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="cli/index.html"><strong aria-hidden="true">3.</strong> 命令</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/book/backup.html"><strong aria-hidden="true">3.1.</strong> 备份</a></li><li class="chapter-item expanded "><a href="cli/book/password.html"><strong aria-hidden="true">3.2.</strong> 修改密码</a></li></ol></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">4.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">4.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="config/book/site.html"><strong aria-hidden="true">4.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="config/book/database.html"><strong aria-hidden="true">4.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="config/book/http.html"><strong aria-hidden="true">4.4.</strong> http</a></li><li class="chapter-item expanded "><a href="config/book/default.html"><strong aria-hidden="true">4.5.</strong> 默认配置</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -293,6 +293,27 @@ rust代码更容易维护和开发。</li>
 突然有少量用户访问时不需要打开新连接.</li>
 <li><code>warn_time</code>: 单个操作超时会发出warning日志.</li>
 </ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="http配置"><a class="header" href="#http配置">http配置</a></h1>
+<p><code>[http]</code>段为http服务器相关配置.</p>
+<table><thead><tr><th>字段</th><th>类型</th><th>描述</th><th>默认值</th></tr></thead><tbody>
+<tr><td><code>bind</code></td><td>String</td><td>绑定的地址</td><td>127.0.0.1</td></tr>
+<tr><td><code>port</code></td><td>Number</td><td>监听http端口</td><td>7474</td></tr>
+<tr><td><code>type</code></td><td><code>http</code> | <code>uds</code></td><td>通信类型</td><td><code>http</code></td></tr>
+<tr><td><code>session_expiry</code></td><td>Time</td><td>session过期时间</td><td><code>7day</code></td></tr>
+<tr><td><code>overdue_check_interval</code></td><td>Time</td><td>定时清理过期session间隔</td><td><code>5h</code></td></tr>
+<tr><td><code>cors</code></td><td>Array[String]</td><td>允许的origin</td><td><code>[]</code></td></tr>
+</tbody></table>
+<h2 id="unix-domain-socket"><a class="header" href="#unix-domain-socket">Unix Domain Socket</a></h2>
+<p>将<code>type</code>字段设置为<code>uds</code>, 然后<code>bind</code>设置为文件地址即可.</p>
+<pre><code class="language-toml">[http]
+type = &quot;uds&quot;
+bind = &quot;/home/me/maop.run&quot;
+</code></pre>
+<h2 id="cors"><a class="header" href="#cors">Cors</a></h2>
+<p><code>*</code>表示接受任意origin</p>
+<pre><code class="language-toml">[http]
+cors = [&quot;*&quot;]
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="内置默认配置"><a class="header" href="#内置默认配置">内置默认配置</a></h1>
 <pre><code class="language-toml"># default: &quot;$HOME/.maop&quot;
 # data_path = &lt;path&gt;
