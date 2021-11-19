@@ -204,24 +204,20 @@ mod rocksdb {
                     opt.create_missing_column_families(true);
                     opt
                 },
-                path,
-            )?);
-            RocksdbStore::regularly_check_expired(
                 path.as_ref(),
-                &inner,
-            );
+            )?);
+            RocksdbStore::regularly_check_expired(&inner);
             Ok(RocksdbStore { inner })
         }
 
-        fn regularly_check_expired(path: &Path, db: &Arc<DB>) {
-            let path = path.to_path_buf();
+        fn regularly_check_expired(db: &Arc<DB>) {
+            let db = Arc::clone(&db);
             global_resource::TIME_WHEEL.add_task(Task::interval(
                 move || {
                     log::debug!("checking for expired session");
 
-                    let path = path.clone();
                     let db = Arc::clone(&db);
-                    Box::pin(async {
+                    Box::pin(async move {
                         if let Result::<(), anyhow::Error>::Err(err) = try {
                             for (key, val) in db.full_iterator(IteratorMode::Start)
                             {
