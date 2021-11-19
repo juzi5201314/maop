@@ -5,3 +5,4 @@
 cargo-timing*
 .env
 maop.toml
+mdbook-build
