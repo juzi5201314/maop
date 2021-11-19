@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">3.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">3.1.</strong> 单位</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="build.html"><strong aria-hidden="true">2.</strong> 构建</a></li><li class="chapter-item expanded "><a href="config/index.html"><strong aria-hidden="true">3.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/book/unit.html"><strong aria-hidden="true">3.1.</strong> 单位</a></li><li class="chapter-item expanded "><a href="config/book/site.html"><strong aria-hidden="true">3.2.</strong> 网站</a></li><li class="chapter-item expanded "><a href="config/book/database.html"><strong aria-hidden="true">3.3.</strong> 数据库</a></li><li class="chapter-item expanded "><a href="config/book/default.html"><strong aria-hidden="true">3.4.</strong> 默认配置</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -216,6 +216,10 @@ rust代码更容易维护和开发。</li>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="配置"><a class="header" href="#配置">配置</a></h1>
 <p>虽然maop <a href="config/./src/default.toml">内置</a>了合理的配置, 
 但所有配置项都可以手动更改和覆盖.</p>
+<h2 id="root"><a class="header" href="#root">root</a></h2>
+<table><thead><tr><th>字段</th><th>类型</th><th>描述</th><th>默认值</th></tr></thead><tbody>
+<tr><td><code>data_path</code></td><td>Path</td><td>maop数据存放的目录(包括数据库, session, 默认备份目录等等)</td><td><code>$HOME/.maop</code></td></tr>
+</tbody></table>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="单位"><a class="header" href="#单位">单位</a></h2>
 <h3 id="时间"><a class="header" href="#时间">时间</a></h3>
 <p>时间解析使用<a href="https://docs.rs/parse_duration/">parse_duration</a>.
@@ -228,6 +232,73 @@ rust代码更容易维护和开发。</li>
 <p>KB for 1000 bytes, KiB for 1024 bytes</p>
 </blockquote>
 <p>最高支持PIB级大小.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="网站配置"><a class="header" href="#网站配置">网站配置</a></h1>
+<p><code>[site]</code>段为网站相关配置.</p>
+<table><thead><tr><th>字段</th><th>类型</th><th>描述</th><th>默认值</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>String</td><td>网站名字</td><td>Maop</td></tr>
+<tr><td><code>title</code></td><td>String</td><td>网站标题</td><td>A default title for maop</td></tr>
+</tbody></table>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="数据库配置"><a class="header" href="#数据库配置">数据库配置</a></h1>
+<p><code>[database]</code>段为数据库相关配置.</p>
+<table><thead><tr><th>字段</th><th>类型</th><th>描述</th><th>默认值</th></tr></thead><tbody>
+<tr><td><code>timeout</code></td><td>Time</td><td>连接超时</td><td><code>5s</code></td></tr>
+<tr><td><code>max_conn</code></td><td>Number</td><td>连接池最大连接数</td><td>50</td></tr>
+<tr><td><code>min_conn</code></td><td>Number</td><td>连接池最小连接数</td><td>1</td></tr>
+<tr><td><code>max_lifetime</code></td><td>Time</td><td>连接最大生命周期</td><td><code>12h</code></td></tr>
+<tr><td><code>idle_timeout</code></td><td>Time</td><td>连接空闲超时</td><td><code>1h</code></td></tr>
+<tr><td><code>warn_time</code></td><td>Time</td><td>操作超时警告</td><td><code>3s</code></td></tr>
+<tr><td><code>shared_cache</code></td><td>Bool</td><td>sqlite配置项</td><td>false</td></tr>
+<tr><td><code>statement_cache_capacity</code></td><td>Number</td><td>sqlite配置项</td><td>100</td></tr>
+<tr><td><code>page_size</code></td><td>Number</td><td>sqlite配置项</td><td>4096</td></tr>
+</tbody></table>
+<ul>
+<li><code>max_lifetime</code>: 单条连接保持太久可能会导致数据库方面的资源泄露.</li>
+<li><code>min_conn</code>: 在连接池中保持一定连接可以加快冷访问速度. 
+突然有少量用户访问时不需要打开新连接.</li>
+<li><code>warn_time</code>: 单个操作超时会发出warning日志.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="内置默认配置"><a class="header" href="#内置默认配置">内置默认配置</a></h1>
+<pre><code class="language-toml"># default: &quot;$HOME/.maop&quot;
+# data_path = &lt;path&gt;
+
+[site]
+name = &quot;Maop&quot;
+title = &quot;A default title for maop&quot;
+
+[database]
+timeout = &quot;5s&quot;
+max_conn = 50
+min_conn = 1
+max_lifetime = &quot;12h&quot;
+idle_timeout = &quot;1h&quot;
+# Database operations exceeding the specified execution time will issue a warning
+warn_time = &quot;3s&quot;
+shared_cache = false
+statement_cache_capacity = 100
+page_size = 4096
+
+[http]
+bind = &quot;127.0.0.1&quot;
+port = &quot;7474&quot;
+type = &quot;http&quot;
+session_expiry = &quot;7d&quot;
+overdue_check_interval = &quot;5h&quot;
+cors = []
+
+[render]
+strict_mode = true
+dev_mode = false
+
+[log]
+level = &quot;INFO&quot;
+
+[log.filter]
+&quot;sqlx::query&quot; = &quot;INFO&quot;
+
+# tokio runtime configuration
+[runtime]
+shutdown_timeout = &quot;10s&quot;
+</code></pre>
 
                     </main>
 
