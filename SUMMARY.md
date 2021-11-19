@@ -9,4 +9,5 @@
     - [单位](config/book/unit.md)
     - [网站](config/book/site.md)
     - [数据库](config/book/database.md)
+    - [http](config/book/http.md)
     - [默认配置](config/book/default.md)
