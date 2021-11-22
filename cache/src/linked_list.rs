@@ -1,8 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::iter::FromIterator;
 
-use itertools::Itertools;
-
 type NodePtr<T> = Option<*mut Node<T>>;
 
 pub struct LinkedList<T> {
@@ -228,13 +226,9 @@ where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[")?;
-        write!(
-            f,
-            "{}",
-            self.iter().map(|val| format!("{:?}", val)).join(", ")
-        )?;
-        write!(f, "]")
+        f.debug_list()
+            .entries(self.iter())
+            .finish()
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::linked_list::LinkedList;
+use std::fmt::{Debug, Formatter};
 
 /*
            +--------------------------+
@@ -50,4 +51,24 @@ impl<T> FifoLinkedList<T> {
         self.size
     }
 
+}
+
+impl<T> Clone for FifoLinkedList<T> where T: Clone {
+    fn clone(&self) -> Self {
+        FifoLinkedList {
+            list: self.list.clone(),
+            capacity: self.capacity,
+            size: self.size
+        }
+    }
+}
+
+impl<T> Debug for FifoLinkedList<T> where T: Debug {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FifoLinkedList")
+            .field("capacity", &self.capacity)
+            .field("size", &self.size)
+            .field("content", &self.list)
+            .finish()
+    }
 }
