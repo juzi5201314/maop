@@ -11,7 +11,7 @@ pub struct LinkedList<T> {
 pub struct Node<T> {
     next: NodePtr<T>,
     last: NodePtr<T>,
-    val: T,
+    pub(crate) val: T,
 }
 
 impl<T> LinkedList<T> {
@@ -22,9 +22,7 @@ impl<T> LinkedList<T> {
         }
     }
 
-    pub fn push_front(&mut self, val: T) {
-        let node = to_ptr(val);
-
+    pub fn push_front_node(&mut self, node: NodePtr<T>) {
         if let Some(head) = &mut self.head {
             unsafe {
                 (*node.unwrap_unchecked()).next = Some(*head);
@@ -37,9 +35,12 @@ impl<T> LinkedList<T> {
         self.head = node;
     }
 
-    pub fn push_back(&mut self, val: T) {
-        let node = to_ptr(val);
+    #[inline]
+    pub fn push_front(&mut self, val: T) {
+        self.push_front_node(to_ptr(val))
+    }
 
+    pub fn push_back_node(&mut self, node: NodePtr<T>) {
         if let Some(tail) = &mut self.tail {
             unsafe {
                 (*node.unwrap_unchecked()).last = Some(*tail);
@@ -50,6 +51,11 @@ impl<T> LinkedList<T> {
             self.head = node;
         }
         self.tail = node;
+    }
+
+    #[inline]
+    pub fn push_back(&mut self, val: T) {
+        self.push_back_node(to_ptr(val))
     }
 
     pub fn pop_front(&mut self) -> Option<T> {
@@ -105,21 +111,31 @@ impl<T> LinkedList<T> {
                 return None;
             }
         }
-        head.map(|node| unsafe {
-            let last = (*node).last;
-            let next = (*node).next;
-            if let Some(last) = last {
-                (*last).next = next;
-            } else {
-                self.head = None;
-            }
-            if let Some(next) = next {
-                (*next).last = last;
-            } else {
-                self.tail = None;
-            }
+        self.remove_node(head)
+    }
+
+    pub fn remove_node(&mut self, node: NodePtr<T>) -> Option<T> {
+        node.map(|node| unsafe {
+            self.unlink(node);
             Box::from_raw(node).val
         })
+    }
+
+    pub unsafe fn unlink(&mut self, node: *mut Node<T>) {
+        let last = (*node).last;
+        let next = (*node).next;
+        if let Some(last) = last {
+            (*last).next = next;
+        } else {
+            self.head = next;
+        }
+        if let Some(next) = next {
+            (*next).last = last;
+        } else {
+            self.tail = last;
+        }
+        (*node).last = None;
+        (*node).next = None;
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -148,7 +164,7 @@ impl<T> LinkedList<T> {
     }
 }
 
-fn to_ptr<T>(val: T) -> NodePtr<T> {
+pub(crate) fn to_ptr<T>(val: T) -> NodePtr<T> {
     Some(Box::into_raw(box Node {
         next: None,
         last: None,
@@ -201,7 +217,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 impl<T> FromIterator<T> for LinkedList<T> {
     fn from_iter<ITER: IntoIterator<Item = T>>(iter: ITER) -> Self {
         let mut list = LinkedList::new();
-        iter.into_iter().for_each(|val| list.push_back(val));
+        list.extend(iter);
         list
     }
 }

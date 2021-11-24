@@ -1,11 +1,10 @@
 #![feature(box_syntax)]
 #![feature(option_result_unwrap_unchecked)]
+#![allow(dead_code)]
 
-mod lru;
-pub mod linked_list;
-mod fifo_linked_list;
-
-use std::hash::Hash;
+pub mod lru;
+mod linked_list;
+pub mod fifo;
 
 /*pub struct CachePool<K, T> {
 
