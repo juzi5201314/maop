@@ -84,11 +84,11 @@ impl<T> FifoCache<T> {
         let front = if self.size >= self.capacity {
             self.container.pop()
         } else {
+            self.size += 1;
             None
         };
 
         self.container.push(val);
-        self.size += 1;
         front
     }
 
@@ -108,3 +108,33 @@ impl<T> FifoCache<T> {
         self.size
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::fifo::{FifoCache, ContainerImpl};
+
+    #[test]
+    fn test_linked_list() {
+        let mut cache = FifoCache::new(ContainerImpl::LinkedList, 2);
+        cache.push(0);
+        cache.push(1);
+        assert_eq!(cache.push(2), Some(0));
+        assert_eq!(cache.len(), 2);
+        assert_eq!(cache.pop(), Some(1));
+        assert_eq!(cache.pop(), Some(2));
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_vec_deque() {
+        let mut cache = FifoCache::new(ContainerImpl::VecDeque, 2);
+        cache.push(0);
+        cache.push(1);
+        assert_eq!(cache.push(2), Some(0));
+        assert_eq!(cache.len(), 2);
+        assert_eq!(cache.pop(), Some(1));
+        assert_eq!(cache.pop(), Some(2));
+        assert!(cache.is_empty());
+    }
+}
+
