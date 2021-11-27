@@ -12,7 +12,8 @@ members = [
     "database",
     "http",
     "timer",
-    "global-resource"
+    "global-resource",
+    "cache"
 ]
 
 [profile.release]

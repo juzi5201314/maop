@@ -14,6 +14,9 @@ use crate::models::comment::{
 };
 
 use super::def_fn;
+use once_cell::sync::Lazy;
+use cache::lru::LruCache;
+use tokio::sync::Mutex;
 
 pub type Post = Entity;
 pub type PostModel = Model;
@@ -62,6 +65,12 @@ pub struct NewPost {
     pub content: String,
 }
 
+type PostAndComments = (PostModel, Vec<CommentModel>);
+
+static POST_COMMENTS_CACHE: Lazy<Mutex<LruCache<u32, PostAndComments>>> = Lazy::new(|| {
+    Mutex::new(LruCache::new(10))
+});
+
 impl Post {
     def_fn!(
         find_all(db) -> Vec<PostModel> {
@@ -108,13 +117,21 @@ impl Post {
     );
 
     def_fn!(
-        find_and_commit(db, id: u32) -> Option<(PostModel, Vec<CommentModel>)> {
-            Post::find_by_id(id)
-            .find_with_related(super::comment::Entity)
-            .all(db)
-            .await
-            .map(|vec| vec.into_iter().next())
-            .context("Post::find_and_commit")
+        find_and_comment(db, id: u32) -> Option<PostAndComments> {
+            let mut cache = POST_COMMENTS_CACHE.lock().await;
+            Ok(if let Some(res) = cache.get(&id) {
+                Some(res.clone())
+            } else {
+                let res = Post::find_by_id(id)
+                    .find_with_related(super::comment::Entity)
+                    .all(db)
+                    .await
+                    .map(|vec| vec.into_iter().next())
+                    .context("Post::find_and_commit")?;
+                std::mem::drop(cache);
+                POST_COMMENTS_CACHE.lock().await.insert(id, res.clone().unwrap());
+                res
+            })
         }
     );
 
@@ -134,6 +151,7 @@ impl Post {
 
     def_fn!(
         update(db, id: u32, title: Option<String>, content: Option<String>) -> () {
+            let mut cache = POST_COMMENTS_CACHE.lock().await;
             let now = chrono::Local::now().naive_local();
             (ActiveModel {
                 id: ActiveValue::set(id),
@@ -144,7 +162,9 @@ impl Post {
             }).into_active_model()
                 .update(db)
                 .await
-                .map(|_| ())
+                .map(|_| {
+                    cache.remove(&id);
+                })
                 .context("Post::update")
         }
     );
