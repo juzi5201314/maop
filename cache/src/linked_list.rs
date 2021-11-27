@@ -262,6 +262,9 @@ impl<T> Drop for LinkedList<T> {
     }
 }
 
+unsafe impl<T> Send for LinkedList<T> where T: Send {}
+unsafe impl<T> Sync for LinkedList<T> where T: Sync {}
+
 #[cfg(test)]
 mod tests {
     use crate::linked_list::LinkedList;

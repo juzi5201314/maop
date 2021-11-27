@@ -1,6 +1,6 @@
 #![feature(box_syntax)]
-#![feature(option_result_unwrap_unchecked)]
 #![allow(dead_code)]
+#![allow(clippy::non_send_fields_in_send_ty)]
 
 pub mod fifo;
 mod linked_list;
