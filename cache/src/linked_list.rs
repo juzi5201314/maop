@@ -121,21 +121,23 @@ impl<T> LinkedList<T> {
         })
     }
 
-    pub unsafe fn unlink(&mut self, node: *mut Node<T>) {
-        let last = (*node).last;
-        let next = (*node).next;
-        if let Some(last) = last {
-            (*last).next = next;
-        } else {
-            self.head = next;
+    pub fn unlink(&mut self, node: *mut Node<T>) {
+        unsafe {
+            let last = (*node).last;
+            let next = (*node).next;
+            if let Some(last) = last {
+                (*last).next = next;
+            } else {
+                self.head = next;
+            }
+            if let Some(next) = next {
+                (*next).last = last;
+            } else {
+                self.tail = last;
+            }
+            (*node).last = None;
+            (*node).next = None;
         }
-        if let Some(next) = next {
-            (*next).last = last;
-        } else {
-            self.tail = last;
-        }
-        (*node).last = None;
-        (*node).next = None;
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -242,25 +244,19 @@ where
     T: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_list()
-            .entries(self.iter())
-            .finish()
+        f.debug_list().entries(self.iter()).finish()
     }
 }
 
 impl<T> Drop for LinkedList<T> {
     fn drop(&mut self) {
-        loop {
-            if let Some(head) = self.head {
-                unsafe {
-                    self.head = (*head).next;
-                    if let Some(head) = self.head {
-                        (*head).last = None;
-                    }
-                    Box::from_raw(head);
+        while let Some(head) = self.head {
+            unsafe {
+                self.head = (*head).next;
+                if let Some(head) = self.head {
+                    (*head).last = None;
                 }
-            } else {
-                break;
+                Box::from_raw(head);
             }
         }
     }

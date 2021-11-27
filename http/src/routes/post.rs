@@ -66,7 +66,7 @@ impl FromRequest for Data {
 
         let site = config.site().clone();
 
-        let post_and_comments = Post::find_and_commit(&*db, post_id)
+        let post_and_comments = Post::find_and_comment(&*db, post_id)
             .await?
             .ok_or_else(|| {
                 HttpError::from_const(

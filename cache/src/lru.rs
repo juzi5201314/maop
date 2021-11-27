@@ -35,14 +35,12 @@ where
         }
     }
 
-    fn update(
+    pub fn update(
         &mut self,
         node: *mut crate::linked_list::Node<Entry<Rc<K>, T>>,
     ) {
-        unsafe {
-            self.list.unlink(node);
-            self.list.push_back_node(Some(node));
-        }
+        self.list.unlink(node);
+        self.list.push_back_node(Some(node));
     }
 
     pub fn remove<Q>(&mut self, key: &Q) -> Option<T>
@@ -63,6 +61,9 @@ where
         let mut ret = None;
         #[allow(mutable_borrow_reservation_conflict)]
         if let Some(node) = self.map.get(&key) {
+            unsafe {
+                drop(std::mem::replace(&mut (**node).val.val, val))
+            }
             self.update(*node);
             return ret;
         } else if self.size >= self.capacity {
@@ -85,6 +86,23 @@ where
         ret
     }
 
+    pub fn get_or_insert<Q, F>(
+        &mut self,
+        key: &Q,
+        or_fn: F,
+    ) -> Option<&T>
+    where
+        Rc<K>: Borrow<Q>,
+        Q: ?Sized + Hash + Eq,
+        F: FnOnce() -> (K, T),
+    {
+        if !self.map.contains_key(key) {
+            let (k, val) = or_fn();
+            self.insert(k, val);
+        }
+        self.get(key)
+    }
+
     pub fn get<Q>(&mut self, key: &Q) -> Option<&T>
     where
         Rc<K>: Borrow<Q>,
@@ -98,7 +116,7 @@ where
         Rc<K>: Borrow<Q>,
         Q: ?Sized + Hash + Eq,
     {
-        self.map.get(key).map(|node| *node).map(|node| unsafe {
+        self.map.get(key).copied().map(|node| unsafe {
             self.update(node);
             &mut (*node).val.val
         })
@@ -111,7 +129,7 @@ where
     {
         self.map
             .get(key)
-            .map(|node| *node)
+            .copied()
             .map(|node| unsafe { &mut (*node).val.val })
     }
 
@@ -290,6 +308,9 @@ impl<'a, K, T> From<&'a Entry<K, T>> for (&'a K, &'a T) {
         (&entry.key, &entry.val)
     }
 }
+
+unsafe impl<K, T> Send for LruCache<K, T> {}
+unsafe impl<K, T> Sync for LruCache<K, T> {}
 
 #[cfg(test)]
 mod tests {

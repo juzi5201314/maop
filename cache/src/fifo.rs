@@ -111,7 +111,7 @@ impl<T> FifoCache<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::fifo::{FifoCache, ContainerImpl};
+    use crate::fifo::{ContainerImpl, FifoCache};
 
     #[test]
     fn test_linked_list() {
@@ -137,4 +137,3 @@ mod tests {
         assert!(cache.is_empty());
     }
 }
-

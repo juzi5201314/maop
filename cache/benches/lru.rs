@@ -24,11 +24,7 @@ fn bench(c: &mut Criterion) {
     let cache = new_lru();
 
     c.bench_function("get", |b| {
-        b.iter_batched(
-            || cache.clone(),
-            get,
-            BatchSize::SmallInput,
-        );
+        b.iter_batched(|| cache.clone(), get, BatchSize::SmallInput);
     });
 
     c.bench_function("insert", |b| {
