@@ -15,7 +15,6 @@ use axum::{AddExtensionLayer, Router};
 use cfg_if::cfg_if;
 use inquire::error::InquireError;
 use inquire::PasswordDisplayMode;
-use sea_orm::prelude::DbConn;
 
 use global_resource::SHUTDOWN_NOTIFY;
 use template::TemplateManager;
@@ -57,7 +56,7 @@ pub async fn run_http_server(
             TemplateManager::new()?,
         )))
         .layer(AddExtensionLayer::new(Arc::new(
-            database::new().await? as DbConn,
+            database::new().await?,
         )))
         .layer(AddExtensionLayer::new(
             SessionStore::new(

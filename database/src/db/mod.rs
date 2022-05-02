@@ -1,6 +1,6 @@
 use anyhow::Context;
-use sea_orm::prelude::DbConn;
 use sea_orm::{ConnectionTrait, Schema, SqlxSqliteConnector};
+use sea_orm::{DatabaseConnection, DbBackend};
 use sqlx_core::connection::ConnectOptions;
 use sqlx_core::pool::PoolOptions;
 use sqlx_core::sqlite::{
@@ -8,7 +8,7 @@ use sqlx_core::sqlite::{
     SqliteSynchronous,
 };
 
-pub async fn new() -> anyhow::Result<DbConn> {
+pub async fn new() -> anyhow::Result<DatabaseConnection> {
     let config_full = config::get_config_full();
     let config = config_full.database();
 
@@ -46,13 +46,12 @@ pub async fn new() -> anyhow::Result<DbConn> {
     Ok(db)
 }
 
-async fn setup_schema(db: &DbConn) -> anyhow::Result<()> {
+async fn setup_schema(db: &DatabaseConnection) -> anyhow::Result<()> {
     db.execute(
         db.get_database_backend().build(
-            Schema::create_table_from_entity(
-                crate::models::post::Entity,
-            )
-            .if_not_exists(),
+            Schema::new(DbBackend::Sqlite)
+                .create_table_from_entity(crate::models::post::Entity)
+                .if_not_exists(),
         ),
     )
     .await
@@ -60,10 +59,11 @@ async fn setup_schema(db: &DbConn) -> anyhow::Result<()> {
 
     db.execute(
         db.get_database_backend().build(
-            Schema::create_table_from_entity(
-                crate::models::comment::Entity,
-            )
-            .if_not_exists(),
+            Schema::new(DbBackend::Sqlite)
+                .create_table_from_entity(
+                    crate::models::comment::Entity,
+                )
+                .if_not_exists(),
         ),
     )
     .await

@@ -1,6 +1,6 @@
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sea_orm::entity::prelude::DbConn;
+use sea_orm::entity::prelude::DatabaseConnection;
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait,
     DeriveEntityModel, DeriveIntoActiveModel, DerivePrimaryKey,
@@ -165,7 +165,7 @@ impl Comment {
             active_model.into_active_model()
                 .insert(db)
                 .await
-                .map(|am: ActiveModel| am.id.unwrap())
+                .map(|am: Model| am.id)
                 .context("Comment::insert")
         }
     );
@@ -175,7 +175,7 @@ impl CommentModel {
     #[inline]
     pub async fn reply(
         &self,
-        db: &DbConn,
+        db: &DatabaseConnection,
         new_comment: NewComment,
     ) -> anyhow::Result<u32> {
         Comment::insert(

@@ -6,7 +6,8 @@ use axum::handler::get;
 use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{Json, Router};
-use sea_orm::prelude::DbConn;use anyhow::Context;
+use sea_orm::DatabaseConnection;
+use anyhow::Context;
 
 use config::SiteConfig;
 use database::models::post::{Post, PostModel};
@@ -49,10 +50,10 @@ impl FromRequest for Data {
         req: &mut RequestParts<Body>,
     ) -> Result<Self, Self::Rejection> {
         let login_status = LoginStatus::from_request(req).await?;
-        let Extension(db): Extension<Arc<DbConn>> =
-            Extension::<Arc<DbConn>>::from_request(req)
+        let Extension(db): Extension<Arc<DatabaseConnection>> =
+            Extension::<Arc<DatabaseConnection>>::from_request(req)
                 .await
-                .context("`DbConn` extension missing")?;
+                .context("`DatabaseConnection` extension missing")?;
         let site = config::get_config_temp().site().clone();
         Ok(Data {
             site,

@@ -9,7 +9,7 @@ use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
-use sea_orm::prelude::DbConn;
+use sea_orm::DatabaseConnection;
 
 use config::SiteConfig;
 use database::models::comment::CommentModel;
@@ -57,10 +57,10 @@ impl FromRequest for Data {
         let login_status = LoginStatus::from_request(req).await?;
         let extract::Path(post_id) =
             extract::Path::<u32>::from_request(req).await?;
-        let Extension(db): Extension<Arc<DbConn>> =
-            Extension::<Arc<DbConn>>::from_request(req)
+        let Extension(db): Extension<Arc<DatabaseConnection>> =
+            Extension::<Arc<DatabaseConnection>>::from_request(req)
                 .await
-                .context("`DbConn` extension missing")?;
+                .context("`DatabaseConnection` extension missing")?;
         let site = config::get_config_temp().site().clone();
 
         let post_and_comments = Post::find_and_commit(&*db, post_id)

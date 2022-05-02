@@ -1,6 +1,6 @@
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sea_orm::prelude::DbConn;
+use sea_orm::DatabaseConnection;
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait,
     DeriveEntityModel, DeriveIntoActiveModel, DerivePrimaryKey,
@@ -127,7 +127,7 @@ impl Post {
             active_model
                 .insert(db)
                 .await
-                .map(|am: ActiveModel| am.id.unwrap())
+                .map(|am: Model| am.id)
                 .context("Post::insert")
         }
     );
@@ -137,8 +137,8 @@ impl Post {
             let now = chrono::Local::now().naive_local();
             (ActiveModel {
                 id: ActiveValue::set(id),
-                title: title.map(ActiveValue::set).unwrap_or_else(ActiveValue::unset),
-                content: content.map(ActiveValue::set).unwrap_or_else(ActiveValue::unset),
+                title: title.map(ActiveValue::set).unwrap_or_else(ActiveValue::not_set),
+                content: content.map(ActiveValue::set).unwrap_or_else(ActiveValue::not_set),
                 last_modified_time: ActiveValue::set(now),
                 ..Default::default()
             }).into_active_model()
@@ -160,21 +160,21 @@ impl PostModel {
     #[inline]
     pub async fn refresh(
         &mut self,
-        db: &DbConn,
+        db: &DatabaseConnection,
     ) -> anyhow::Result<()> {
         *self = Post::find_one(db, self.id).await?.unwrap();
         Ok(())
     }
 
     #[inline]
-    pub async fn delete(self, db: &DbConn) -> anyhow::Result<()> {
+    pub async fn delete(self, db: &DatabaseConnection) -> anyhow::Result<()> {
         Post::delete(db, self.id).await
     }
 
     #[inline]
     pub async fn update(
         &self,
-        db: &DbConn,
+        db: &DatabaseConnection,
         title: Option<String>,
         content: Option<String>,
     ) -> anyhow::Result<()> {
@@ -184,7 +184,7 @@ impl PostModel {
     #[inline]
     pub async fn reply<C>(
         &self,
-        db: &DbConn,
+        db: &DatabaseConnection,
         new_comment: NewComment,
         reply_to: Option<C>,
     ) -> anyhow::Result<u32>

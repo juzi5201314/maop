@@ -9,7 +9,7 @@ use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
 use compact_str::CompactStr;
-use sea_orm::prelude::DbConn;
+use sea_orm::DatabaseConnection;
 
 use config::SiteConfig;
 use database::models::comment::{Comment, CommentModel, NewComment};
@@ -64,7 +64,7 @@ async fn update_post(
     _: Logged,
     extract::Path(post_id): extract::Path<u32>,
     Json(data): Json<UpdatePostData>,
-    Extension(db): Extension<Arc<DbConn>>,
+    Extension(db): Extension<Arc<sea_orm::DatabaseConnection>>,
 ) -> Result<Json<PostRes>, HttpError> {
     Post::update(
         &*db,
@@ -79,7 +79,7 @@ async fn update_post(
 async fn new_post(
     _: Logged,
     Json(data): Json<PostData>,
-    Extension(db): Extension<Arc<DbConn>>,
+    Extension(db): Extension<Arc<DatabaseConnection>>,
 ) -> Result<Json<PostRes>, HttpError> {
     let post_id = Post::insert(
         &*db,
@@ -95,7 +95,7 @@ async fn new_post(
 async fn delete_post(
     _: Logged,
     extract::Path(post_id): extract::Path<u32>,
-    Extension(db): Extension<Arc<DbConn>>,
+    Extension(db): Extension<Arc<DatabaseConnection>>,
 ) -> Result<Json<PostRes>, HttpError> {
     Post::delete(&*db, post_id).await?;
     Ok(Json(PostRes { id: post_id }))
@@ -169,10 +169,10 @@ impl FromRequest for EditPostData {
         Logged::from_request(req).await?;
         let extract::Path(post_id) =
             extract::Path::<u32>::from_request(req).await?;
-        let Extension(db): Extension<Arc<DbConn>> =
+        let Extension(db): Extension<Arc<DatabaseConnection>> =
             Extension::from_request(req)
                 .await
-                .context("`DbConn` extension missing")?;
+                .context("`DatabaseConnection` extension missing")?;
         let site = config::get_config_temp().site().clone();
 
         let post_and_comments = Post::find_and_commit(&*db, post_id)
@@ -212,7 +212,7 @@ pub struct CommentRes {
 
 async fn new_comment(
     Json(data): Json<CommentData>,
-    Extension(db): Extension<Arc<DbConn>>,
+    Extension(db): Extension<Arc<DatabaseConnection>>,
 ) -> Result<Json<CommentRes>, HttpError> {
     if data.nickname.is_empty() || data.email.is_empty() || data.content.is_empty() {
         return Err(HttpError::from_const(StatusCode::BAD_REQUEST, "Content cannot be empty"))
@@ -235,7 +235,7 @@ async fn delete_comment(
     _: Logged,
     extract::Path(comment_id): extract::Path<u32>,
     Query(params): Query<HashMap<CompactStr, CompactStr>>,
-    Extension(db): Extension<Arc<DbConn>>,
+    Extension(db): Extension<Arc<DatabaseConnection>>,
 ) -> Result<Json<CommentRes>, HttpError> {
     if params.get("hard").is_some() {
         Comment::hard_delete(&*db, comment_id).await?;
