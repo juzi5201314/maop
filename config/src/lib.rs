@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use arc_swap::{ArcSwap, ArcSwapAny, Cache, Guard};
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
@@ -55,7 +55,7 @@ pub fn hook(hook: Box<dyn Fn() + Send + Sync + 'static>) {
 ///
 /// 永远都应该在logger初始化之前初始化config.
 /// 因为logger依赖config, 如果在config初始化的时候打印log, 那么将会陷入死递归
-pub fn init(paths: Vec<CompactStr>) -> anyhow::Result<()> {
+pub fn init(paths: Vec<CompactString>) -> anyhow::Result<()> {
     CONFIG.set(Config::new(paths)?).ok();
     Ok(())
 }
@@ -68,7 +68,7 @@ struct Config {
 }
 
 impl Config {
-    fn new(paths: Vec<CompactStr>) -> anyhow::Result<Config> {
+    fn new(paths: Vec<CompactString>) -> anyhow::Result<Config> {
         let mut c = config_rs::Config::new();
         c.merge(
             config_rs::File::from_str(
@@ -127,7 +127,7 @@ impl Config {
         Ok(())
     }
 
-    fn watch(&self, paths: Vec<CompactStr>) -> notify::Result<()> {
+    fn watch(&self, paths: Vec<CompactString>) -> notify::Result<()> {
         let mut watcher = notify::recommended_watcher(
             |res: notify::Result<Event>| match res {
                 Ok(event) => {

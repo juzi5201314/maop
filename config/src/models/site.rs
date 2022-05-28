@@ -1,3 +1,3 @@
-use compact_str::CompactStr;
+use compact_str::CompactString;
 
-crate::gen_config!(SiteConfig, { name: CompactStr, title: CompactStr });
+crate::gen_config!(SiteConfig, { name: CompactString, title: CompactString });

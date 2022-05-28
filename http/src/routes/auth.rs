@@ -9,7 +9,7 @@ use axum::http::Response;
 use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{Json, Router};
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use hyper::StatusCode;
 use anyhow::Context;
 
@@ -110,7 +110,7 @@ pub async fn login(
 
 #[derive(serde::Deserialize)]
 pub struct LoginData {
-    password: CompactStr,
+    password: CompactString,
 }
 
 pub async fn logout(
