@@ -8,7 +8,7 @@ use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::BoxRoute;
 use axum::{extract, Json, Router};
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use sea_orm::DatabaseConnection;
 
 use config::SiteConfig;
@@ -200,9 +200,9 @@ impl FromRequest for EditPostData {
 pub struct CommentData {
     post_id: u32,
     reply_to: Option<u32>,
-    nickname: CompactStr,
-    email: CompactStr,
-    content: CompactStr,
+    nickname: CompactString,
+    email: CompactString,
+    content: CompactString,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -234,7 +234,7 @@ async fn new_comment(
 async fn delete_comment(
     _: Logged,
     extract::Path(comment_id): extract::Path<u32>,
-    Query(params): Query<HashMap<CompactStr, CompactStr>>,
+    Query(params): Query<HashMap<CompactString, CompactString>>,
     Extension(db): Extension<Arc<DatabaseConnection>>,
 ) -> Result<Json<CommentRes>, HttpError> {
     if params.get("hard").is_some() {

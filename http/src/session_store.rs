@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_session::{Session, SessionStore as AsyncSessionStore};
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
@@ -22,7 +22,7 @@ pub type SessionStore = rocksdb::RocksdbStore;
 
 #[derive(Debug, Clone)]
 pub struct FileStore {
-    cache: Arc<Mutex<HashMap<CompactStr, Session>>>,
+    cache: Arc<Mutex<HashMap<CompactString, Session>>>,
     path: PathBuf,
 }
 
@@ -76,7 +76,7 @@ impl FileStore {
 
     fn regularly_check_expired(
         path: &Path,
-        cache: Arc<Mutex<HashMap<CompactStr, Session>>>,
+        cache: Arc<Mutex<HashMap<CompactString, Session>>>,
     ) {
         let path = path.to_path_buf();
         global_resource::TIME_WHEEL.add_task(Task::interval(

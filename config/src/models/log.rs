@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use _log::Level;
 
 crate::gen_config!(LogConfig, {
-    filter: HashMap<CompactStr, Level>,
+    filter: HashMap<CompactString, Level>,
     level: Level
 });

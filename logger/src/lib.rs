@@ -9,7 +9,7 @@ use std::sync::Arc;
 use arc_swap::ArcSwap;
 use chrono::{DateTime, Local, NaiveDate, SecondsFormat};
 use colored::{ColoredString, Colorize};
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use crossfire::mpsc;
 use crossfire::mpsc::SharedSenderBRecvF;
 use futures::FutureExt;
@@ -23,7 +23,7 @@ use global_resource::SHUTDOWN_NOTIFY;
 
 static LOGGER: Lazy<Logger> = Lazy::new(Default::default);
 
-static LOGGER_FILTER: Lazy<ArcSwap<HashMap<CompactStr, Level>>> =
+static LOGGER_FILTER: Lazy<ArcSwap<HashMap<CompactString, Level>>> =
     Lazy::new(|| {
         ArcSwap::from_pointee(
             config::get_config_temp().log().filter().clone(),
@@ -65,7 +65,7 @@ impl log::Log for Logger {
             let record = Record {
                 metadata: Metadata {
                     level: record.metadata().level(),
-                    target: CompactStr::from(
+                    target: CompactString::from(
                         record.metadata().target(),
                     ),
                 },
@@ -76,7 +76,7 @@ impl log::Log for Logger {
                         Cow::Owned(record.args().to_string())
                     }
                 },
-                file: CompactStr::from(
+                file: CompactString::from(
                     record.file().unwrap_or_default(),
                 ),
                 line: record.line().unwrap_or_default(),
@@ -162,7 +162,7 @@ struct Context {
 )]
 pub struct Metadata {
     level: Level,
-    target: CompactStr,
+    target: CompactString,
 }
 
 impl Metadata {
@@ -172,7 +172,7 @@ impl Metadata {
     }
 
     #[inline]
-    pub fn target(&self) -> &CompactStr {
+    pub fn target(&self) -> &CompactString {
         &self.target
     }
 }
@@ -181,7 +181,7 @@ impl Metadata {
 struct Record {
     metadata: Metadata,
     content: Cow<'static, str>,
-    file: CompactStr,
+    file: CompactString,
     line: u32,
     time: DateTime<Local>,
 }

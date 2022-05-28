@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use axum::http::Request;
-use compact_str::CompactStr;
+use compact_str::CompactString;
 use hyper::header::{
     HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN, ORIGIN,
 };
@@ -13,7 +13,7 @@ use tower::Layer;
 
 #[derive(Clone, Debug)]
 pub struct CorsLayer {
-    origins: Vec<CompactStr>,
+    origins: Vec<CompactString>,
     allow_all: bool,
 }
 
@@ -31,8 +31,8 @@ pub struct ResponseFuture<F> {
 }
 
 impl CorsLayer {
-    pub fn new(origins: Vec<CompactStr>) -> Self {
-        if origins.contains(&CompactStr::new_inline("*")) {
+    pub fn new(origins: Vec<CompactString>) -> Self {
+        if origins.contains(&CompactString::new_inline("*")) {
             CorsLayer {
                 origins: Vec::new(),
                 allow_all: true,
@@ -85,7 +85,7 @@ where
                 .get(ORIGIN)
                 .map(|val| val.to_str().ok())
                 .flatten()
-                .map(CompactStr::new);
+                .map(CompactString::new);
             if let Some(origin) = origin {
                 if self.layer.origins.contains(&origin) {
                     allow_origin =
