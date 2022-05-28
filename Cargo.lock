@@ -649,16 +649,6 @@ dependencies = [
 
 [[package]]
 name = "compact_str"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc7fbe0058cad3f47c64669628b9f4ebbd4d5b3a186c0da99b915cd526fdcf6f"
-dependencies = [
- "serde 1.0.137",
- "static_assertions",
-]
-
-[[package]]
-name = "compact_str"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb6f80f92629b81f5b17b616a99f72870556ca457bbbd99aeda7bb5d194316a2"
@@ -675,7 +665,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arc-swap",
- "compact_str 0.4.0",
+ "compact_str",
  "config 0.11.0",
  "dirs",
  "log",
@@ -1001,7 +991,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "compact_str 0.1.1",
+ "compact_str",
  "config 0.1.0",
  "log",
  "proc_macro",
@@ -1526,7 +1516,7 @@ dependencies = [
  "axum 0.2.8",
  "bincode",
  "cfg-if 1.0.0",
- "compact_str 0.1.1",
+ "compact_str",
  "config 0.1.0",
  "database",
  "futures",
@@ -1961,7 +1951,7 @@ dependencies = [
  "arc-swap",
  "chrono",
  "colored",
- "compact_str 0.1.1",
+ "compact_str",
  "config 0.1.0",
  "crossfire",
  "futures",
@@ -4266,7 +4256,7 @@ dependencies = [
  "byte-unit",
  "cfg-if 1.0.0",
  "chrono",
- "compact_str 0.1.1",
+ "compact_str",
  "crossfire",
  "log",
  "once_cell",
